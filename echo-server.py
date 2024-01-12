@@ -33,12 +33,13 @@ def establecerConexion():
 
                     # Decodificar y guardar el mensaje del cliente
                     input_client = data.decode()
-
+                    
                     # Modificar el mensaje a enviar de vuelta al cliente
                     response_to_client = f"Mensaje desde el servidor: {input_client}"
 
                     # Enviar de vuelta el mensaje modificado al cliente
                     conn.sendall(response_to_client.encode())
+                    admitirComandos(input_client)
 
                 except socket.timeout:
                     print("Tiempo de espera alcanzado. Cerrando conexión.")
@@ -58,8 +59,6 @@ def admitirComandos(input_client):
             print("El comando no existe o no está escrito correctamente. Recuerda que los comandos son en mayusculas y empiezan por /")
     else:
         print("El input no incluye un comando (no comienza por /)")
-        
-establecerConexion() #Llamada al metodo establecerConexion
-admitirComandos(input_client)
 
-
+#Llamada al metodo establecerConexion        
+establecerConexion() 
