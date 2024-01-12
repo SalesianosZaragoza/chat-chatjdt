@@ -13,6 +13,19 @@ input_client = ""
 #Lista de strings con las opciones que se pueden usar como comandos
 command_list = ["LIST", "CREATE", "CONNECT", "JOIN", "MSG"]
 
+#Diccionarios
+channell = {
+    'canal1': '[ismael, jose, juan]',
+    'canal2': '[ismael, jose]',
+    'canal3': '[ismael, juan]'
+    }
+# Creacion de canales usando diccionarios
+user = {
+    'ismael': '192.168.1.2',
+    'jose': '192.168.1.3',
+    'juan': '192.168.1.4'
+    }
+
 def establecerConexion():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))
