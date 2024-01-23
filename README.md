@@ -12,7 +12,7 @@ Luego el resto de ramas propias: dev_cls, dev_ibt, dev_jm, dev_af...
 * Revisas commits nuevos (fetch) de la rama DEV.
 * Si hay commits, haces un pull de la rama DEV.
 * Merge de DEV a tu rama propia (dev_cls)
-* Pull de tu rama propia
+* Push de tu rama propia
 * Ahora empiezas a trabajar con todo actualizado
 
 * Cuando realizas tus cambios haces un push a tu rama.
