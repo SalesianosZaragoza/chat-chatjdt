@@ -14,17 +14,19 @@ input_client = ""
 command_list = ["LIST", "CREATE", "CONNECT", "JOIN", "MSG"]
 
 #Diccionarios
-channell = {
-    'canal1': '[ismael, jose, juan]',
+channel = {
+    'canal1': '[]',
     'canal2': '[ismael, jose]',
     'canal3': '[ismael, juan]'
     }
 # Creacion de canales usando diccionarios
-user = {
+users = {
     'ismael': '192.168.1.2',
     'jose': '192.168.1.3',
     'juan': '192.168.1.4'
-    }
+}
+
+user=("ismael", "192.168.1.2")
 
 def establecerConexion():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -75,3 +77,22 @@ def admitirComandos(input_client):
 
 #Llamada al metodo establecerConexion        
 establecerConexion() 
+
+
+
+def join_channel(command, user):
+    if command == "/JOIN":
+        channel = list(channel.keys())  # Lista de canales existentes
+        print("Canales existentes:", channel)
+        channel_name = input(
+            "Introduce el nombre del canal al que quieres unirte: ")
+        # Añade el usuario al canal indicado
+        if channel_name in channel:
+            channel[channel_name].append(user)
+            print(f"Usuario '{user}' añadido al canal '{channel_name}'.")
+        else:
+            print(f"El canal '{channel_name}' no existe.")
+    else:
+        print(f"El comando no es válido.")
+
+join_channel(input_client, user)

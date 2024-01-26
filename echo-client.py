@@ -3,12 +3,16 @@
 import socket
 import time
 
-HOST = "127.0.0.1"
+#Recogemos el nombre del Host para obtener su IP
+HOSTNAME = socket.gethostname()
+HOSTIP = socket.gethostbyname(HOSTNAME)
+
 PORT = 65432
+
 TIEMPO_ESPERA = 60  # segundos
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
+    s.connect((HOSTIP, PORT))
     
     # Establecer un tiempo de espera para el cliente
     s.settimeout(TIEMPO_ESPERA)
