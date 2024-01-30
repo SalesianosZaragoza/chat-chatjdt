@@ -3,7 +3,7 @@
 import socket
 
 HOST = "127.0.0.1"
-PORT = 65432
+PORT = 65433
 TIEMPO_ESPERA = 20  # segundos
 
 # Inicializar la variable para almacenar el mensaje del cliente
@@ -24,6 +24,8 @@ user = {
     'jose': '192.168.1.3',
     'juan': '192.168.1.4'
     }
+#Diccionario de usuarios
+users = {}
 
 def establecerConexion():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -32,11 +34,11 @@ def establecerConexion():
         #conn y addr son variables que se usan para almacenar la conexion y la direccion del cliente
         conn, addr = s.accept()
         with conn:
-            print(f"Conectado por {addr}")
-            
             # Establecer un tiempo de espera para el servidor
             conn.settimeout(TIEMPO_ESPERA)
-            
+
+            print(f"Conectado por {addr}")
+
             while True:
                 try:
                     # Recibir datos del cliente (hasta 1024 bytes)
@@ -47,7 +49,8 @@ def establecerConexion():
 
                     # Decodificar y guardar el mensaje del cliente
                     input_client = data.decode()
-                    
+                    registroUsuario(input_client, addr, conn)
+
                     # Modificar el mensaje a enviar de vuelta al cliente
                     response_to_client = f"Mensaje desde el servidor: {input_client}"
                     # codifica el mensaje con encode y lo envia al cliente.
@@ -74,6 +77,28 @@ def admitirComandos(input_client):
             print("El comando no existe o no está escrito correctamente. Recuerda que los comandos son en mayusculas y empiezan por /")
     else:
         print("El input no incluye un comando (no comienza por /)")
+        
+"""Metodo registroUsuario,
+Separa el mensaje del cliente en dos partes, verifica si el mensaje tiene el formato esperado
+Almacena el usuario y su dirección IP en el diccionario, envia un mensaje personalizado de confirmación al cliente"""
+def registroUsuario(input_client, addr, conn):
+    # Separar el mensaje del cliente en dos partes                
+    partes_mensaje = input_client.split(':')
+    # Verificar si el mensaje tiene el formato esperado
+    if len(partes_mensaje) == 2 and partes_mensaje[0] == "USERNAME":
+        username = partes_mensaje[1]
 
+        # Almacenar el usuario y su dirección IP en el diccionario
+        users[username] = addr[0]
+
+        # Enviar un mensaje personalizado de confirmación al cliente
+        response_to_client = f"Bienvenido, {username}! Tu dirección IP es {addr[0]}"
+        conn.sendall(response_to_client.encode())
+
+        print(f"Usuario registrado: {username} - {addr[0]}")
+    else:
+        print("Mensaje no reconocido")
+
+    
 #Llamada al metodo establecerConexion        
 establecerConexion() 

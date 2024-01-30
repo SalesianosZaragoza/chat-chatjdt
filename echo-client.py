@@ -3,21 +3,28 @@
 import socket
 
 HOST = "127.0.0.1"
-PORT = 65432
+PORT = 65433
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
-    
+
+    username = ""
+    # Salir del bucle si no se ingresa ningún mensaje
+    while not username:
+        username = input("Ingrese Username: ")
+        username = f"USERNAME:{username}"
+        s.sendall(username.encode())
+
     while True:
+        data = s.recv(1024)
+        response_from_server = data.decode()
+        print({response_from_server})
+        
         try:
-            # Solicitar al usuario que ingrese un mensaje
-            message = input("Ingrese un mensaje (o presione Enter para salir): ")
-            
-            # Salir del bucle si no se ingresa ningún mensaje
+            # Convertir el mensaje a bytes y enviarlo al servidor
+            message = input("Ingrese un mensaje (o presione Enter para Salir): ")
             if not message:
                 break
-            
-            # Convertir el mensaje a bytes y enviarlo al servidor
             s.sendall(message.encode())
             
             # Recibir la respuesta del servidor
