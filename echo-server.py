@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
 import socket
-import time
 
 HOST = "127.0.0.1"
 PORT = 65432
-TIEMPO_ESPERA = 60  # segundos
+TIEMPO_ESPERA = 20  # segundos
 
 # Inicializar la variable para almacenar el mensaje del cliente
 input_client = ""  
@@ -30,6 +29,7 @@ def establecerConexion():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))
         s.listen()
+        #conn y addr son variables que se usan para almacenar la conexion y la direccion del cliente
         conn, addr = s.accept()
         with conn:
             print(f"Conectado por {addr}")
@@ -39,6 +39,7 @@ def establecerConexion():
             
             while True:
                 try:
+                    # Recibir datos del cliente (hasta 1024 bytes)
                     data = conn.recv(1024)
                     if not data:
                         print("Cliente desconectado")
@@ -49,9 +50,10 @@ def establecerConexion():
                     
                     # Modificar el mensaje a enviar de vuelta al cliente
                     response_to_client = f"Mensaje desde el servidor: {input_client}"
-
-                    # Enviar de vuelta el mensaje modificado al cliente
+                    # codifica el mensaje con encode y lo envia al cliente.
                     conn.sendall(response_to_client.encode())
+
+
                     admitirComandos(input_client)
 
                 except socket.timeout:
