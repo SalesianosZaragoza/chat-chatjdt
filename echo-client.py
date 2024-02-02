@@ -15,11 +15,12 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         username = f"USERNAME:{username}"
         s.sendall(username.encode())
 
-    while True:
+        # Recibir la respuesta del servidor
         data = s.recv(1024)
         response_from_server = data.decode()
         print({response_from_server})
         
+    while True:
         try:
             # Convertir el mensaje a bytes y enviarlo al servidor
             message = input("Ingrese un mensaje (o presione Enter para Salir): ")
