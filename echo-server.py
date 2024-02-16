@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
 import socket
+import threading
 
-HOST = "127.0.0.1"
-PORT = 65437
-TIEMPO_ESPERA = 100  # segundos
+TIEMPO_ESPERA = 100  # segundos maximos que espera el servidor antes de cerrar la conexion
+PORT = 65433 #Puerto del servidor
+HOST = "127.0.0.1" #IP del servidor
 
 # Inicializar la variable para almacenar el mensaje del cliente
 input_client = ""  
@@ -12,8 +13,15 @@ input_client = ""
 #Lista de strings con las opciones que se pueden usar como comandos
 command_list = ["LIST", "CREATE", "CONNECT", "JOIN", "MSG"]
 
-#Diccionario de usuarios
+#Diccionario de usuarios. 
 users = {}
+#Conforme se registran usuarios se va rellenando con El nombre del usuario y su IP
+"""
+users = {
+    'Usuario1': '192.168.0.15'
+}
+"""
+
 def establecerConexion():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))
@@ -23,7 +31,6 @@ def establecerConexion():
         with conn:
             # Establecer un tiempo de espera para el servidor
             conn.settimeout(TIEMPO_ESPERA)
-
             print(f"Conectado por {addr}")
 
             # Si el usuario no está registrado, solicitar el registro
@@ -35,21 +42,23 @@ def establecerConexion():
             input_client = data.decode()
             registroUsuario(input_client, addr, conn)
             while True:
-
                 try:
                     data = conn.recv(1024)
                     if not data:
                         print("Cliente desconectado")
                         break
                     input_client = data.decode()
-
+                    
+                    if input_client == "mensaje":
+                        """Si el usuario está enviando un mensaje se lanza un hilo para no detener la aplicación.
+                        En este se comprueba si el mensaje contiene algún comando"""
+                        threading.Thread(target=admitirComandos,args=(input_client)).run();
+                    
+                    
                     # Modificar el mensaje a enviar de vuelta al cliente
                     response_to_client = f"Mensaje desde el servidor: {input_client}"
                     # codifica el mensaje con encode y lo envia al cliente.
                     conn.sendall(response_to_client.encode())
-
-
-                    admitirComandos(input_client)
 
                 except socket.timeout:
                     print("Tiempo de espera alcanzado. Cerrando conexión.")
@@ -69,7 +78,8 @@ def admitirComandos(input_client):
             print("El comando no existe o no está escrito correctamente. Recuerda que los comandos son en mayusculas y empiezan por /")
     else:
         print("El input no incluye un comando (no comienza por /)")
-        
+
+
 """Metodo registroUsuario,
 Separa el mensaje del cliente en dos partes, verifica si el mensaje tiene el formato esperado
 Almacena el usuario y su dirección IP en el diccionario, envia un mensaje personalizado de confirmación al cliente"""
@@ -91,7 +101,3 @@ def registroUsuario(input_client, addr, conn):
         print(f"Usuarios registrados: {users}")
     else:
         print("Mensaje no reconocido")
-
-    
-#Llamada al metodo establecerConexion        
-establecerConexion() 
