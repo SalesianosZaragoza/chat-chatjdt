@@ -1,40 +1,49 @@
-#!/usr/bin/env python3
-
+import threading
 import socket
 
+
 HOST = "127.0.0.1"
-PORT = 65433
+PORT = 65437
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
-
-    username = ""
-    # Salir del bucle si no se ingresa ningún mensaje
-    while not username:
-        username = input("Ingrese Username: ")
-        username = f"USERNAME:{username}"
-        s.sendall(username.encode())
-
-        # Recibir la respuesta del servidor
-        data = s.recv(1024)
-        response_from_server = data.decode()
-        print({response_from_server})
-        
+def receive(s):
     while True:
         try:
-            # Convertir el mensaje a bytes y enviarlo al servidor
-            message = input("Ingrese un mensaje (o presione Enter para Salir): ")
-            if not message:
-                break
-            s.sendall(message.encode())
-            
-            # Recibir la respuesta del servidor
             data = s.recv(1024)
-            
-            # Decodificar y mostrar la respuesta recibida del servidor
-            response_from_server = data.decode()
-            print(f"Mensaje recibido del servidor: {response_from_server}")
-        
-        except socket.timeout:
-            print("Tiempo de espera alcanzado. Cerrando conexión.")
+            if not data:
+                break
+            print(f"Mensaje recibido del servidor: {data.decode()}")
+        except Exception as e:
+            print(f"Error al recibir datos: {e}")
             break
+
+def send(s):
+    while True:
+        try:
+            message = input("Ingrese un mensaje (o presione Enter para Salir): ")
+            s.sendall(message.encode())
+        except Exception as e:
+            print(f"Error al enviar mensaje: {e}")
+            break
+
+def main():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((HOST, PORT))
+        username = ""
+        while not username:
+            username = input("Ingrese Username: ")
+            s.sendall(f"USERNAME:{username}".encode())
+            response_from_server = s.recv(1024).decode()
+            print({response_from_server})
+
+        # Crear hilos para enviar y recibir
+        hiloRecibir = threading.Thread(target=receive, args=(s,))
+        hiloMandar = threading.Thread(target=send, args=(s,))
+
+        hiloRecibir.start()
+        hiloMandar.start()
+        
+        hiloRecibir.join()
+        hiloMandar.join()
+
+if __name__ == "__main__":
+    main()

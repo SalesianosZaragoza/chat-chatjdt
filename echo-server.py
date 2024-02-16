@@ -3,7 +3,7 @@
 import socket
 
 HOST = "127.0.0.1"
-PORT = 65433
+PORT = 65437
 TIEMPO_ESPERA = 100  # segundos
 
 # Inicializar la variable para almacenar el mensaje del cliente
