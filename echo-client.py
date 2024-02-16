@@ -1,28 +1,31 @@
 #!/usr/bin/env python3
 
 import socket
-import time
 
 HOST = "127.0.0.1"
-PORT = 65432
-TIEMPO_ESPERA = 60  # segundos
+PORT = 65433
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
-    
-    # Establecer un tiempo de espera para el cliente
-    s.settimeout(TIEMPO_ESPERA)
-    
+
+    username = ""
+    # Salir del bucle si no se ingresa ningún mensaje
+    while not username:
+        username = input("Ingrese Username: ")
+        username = f"USERNAME:{username}"
+        s.sendall(username.encode())
+
+        # Recibir la respuesta del servidor
+        data = s.recv(1024)
+        response_from_server = data.decode()
+        print({response_from_server})
+        
     while True:
         try:
-            # Solicitar al usuario que ingrese un mensaje
-            message = input("Ingrese un mensaje (o presione Enter para salir): ")
-            
-            # Salir del bucle si no se ingresa ningún mensaje
+            # Convertir el mensaje a bytes y enviarlo al servidor
+            message = input("Ingrese un mensaje (o presione Enter para Salir): ")
             if not message:
                 break
-            
-            # Convertir el mensaje a bytes y enviarlo al servidor
             s.sendall(message.encode())
             
             # Recibir la respuesta del servidor
