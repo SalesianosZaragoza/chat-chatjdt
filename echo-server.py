@@ -101,3 +101,5 @@ def registroUsuario(input_client, addr, conn):
         print(f"Usuarios registrados: {users}")
     else:
         print("Mensaje no reconocido")
+
+establecerConexion()
