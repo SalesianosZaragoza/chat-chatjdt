@@ -6,6 +6,8 @@ import time
 HOST = "127.0.0.1"
 PORT = 65440
 
+
+
 def receive(s):
     while True:
         try:

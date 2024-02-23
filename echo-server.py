@@ -13,6 +13,7 @@ channels = {}
 
 #Lista de strings con las opciones que se pueden usar como comandos
 command_list = ["LIST", "CREATE", "CONNECT", "JOIN", "MSG"]
+#estado del comando para métodos Create y Join. Si no tiene un estado lo recibe como un mensaje en lugar de un
 estado_comando = {"comando_actual": None, "datos": None}
 
 #Diccionario de usuarios
@@ -125,6 +126,8 @@ def create_channel(conn, input_client, channels):
         # Configurar el estado para esperar el nombre del canal
         estado_comando["comando_actual"] = "CREATE"
         conn.sendall("Por favor, especifique un nombre para el canal".encode())
+
+
 
 
 #LISTAR LOS CANALES
