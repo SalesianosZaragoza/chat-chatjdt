@@ -72,9 +72,7 @@ def manejar_comando(conn, input_client, channels, addr, username):
                 estado_comando["comando_actual"] = "JOIN"
                 
         elif comando == "CREATE":
-            # Establecer el estado para el comando CREATE y esperar el siguiente mensaje para el nombre del canal
-            estado_comando["comando_actual"] = "CREATE"
-            conn.sendall("Por favor, especifique un nombre para el canal".encode())
+            create_channel(conn, input_client, channels)
             
         elif comando == "LIST":
             list_channels(conn, channels, username)
@@ -84,10 +82,6 @@ def manejar_comando(conn, input_client, channels, addr, username):
             
         else:
             conn.sendall("Comando no reconocido".encode())
-    elif estado_comando["comando_actual"] == "CREATE":
-        # Aquí se maneja la creación del canal después de recibir el nombre del canal
-        create_channel(conn, input_client, channels)
-        estado_comando["comando_actual"] = None
     elif estado_comando["comando_actual"] == "JOIN":
         # Maneja el estado del comando después de listar los canales, para que el usuario pueda unirse a uno
         join_channel(conn, input_client, channels, username, addr)
@@ -100,30 +94,18 @@ def manejar_comando(conn, input_client, channels, addr, username):
 
 #CREAR CANAL
 def create_channel(conn, input_client, channels):
-    if estado_comando["comando_actual"] == "CREATE":
-        # El nombre del canal se espera en input_client
-        nombre_canal = input_client.strip()
+    partes = input_client.split(" ", 1)
+    if len(partes) < 2:
+        conn.sendall("Formato incorrecto. Usa /CREATE [nombreDelCanal]".encode())
+        return
 
-        if not nombre_canal:
-            conn.sendall("El nombre del canal no puede estar vacío. Intente de nuevo.".encode())
-            return
+    nombre_canal = partes[1].strip()
 
-        if nombre_canal in channels:
-            conn.sendall(f"El canal '{nombre_canal}' ya existe.".encode())
-        else:
-            # Crear el nuevo canal
-            channels[nombre_canal] = {}
-            conn.sendall(f"Canal '{nombre_canal}' creado con éxito.".encode())
-
-        # Restablecer el estado del comando
-        estado_comando["comando_actual"] = None
+    if nombre_canal in channels:
+        conn.sendall(f"El canal '{nombre_canal}' ya existe.".encode())
     else:
-        # Esta es la primera parte del comando CREATE
-        # Configurar el estado para esperar el nombre del canal
-        estado_comando["comando_actual"] = "CREATE"
-        conn.sendall("Por favor, especifique un nombre para el canal".encode())
-
-
+        channels[nombre_canal] = {}
+        conn.sendall(f"Canal '{nombre_canal}' creado con éxito.".encode())
 
 
 #LISTAR LOS CANALES
