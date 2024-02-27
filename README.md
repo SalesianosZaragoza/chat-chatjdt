@@ -51,7 +51,9 @@
 > [!NOTE]
 >
 > - Subes los cambios a tu rama: <br/>
-> - ```
+>
+> ```
 >   git push origin <dev_TuRama>
->   ```
+> ```
+>
 > - Abres un New Pull Request en GitHub. Se ubica en la barra superior (3º Opcion)
