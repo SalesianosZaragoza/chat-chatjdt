@@ -19,6 +19,6 @@
 
 > [!NOTE]
 >
-> - Obtener posibles cambios que se han subido a la rama dev: git pull dev
 > - Cambiamos a la rama dev: git checkout dev
+> - Obtener posibles cambios que se han subido a la rama dev: git pull
 > - Resolver posibles conflictos que surjan y una vez resueltos hacer: git merge dev_TU
