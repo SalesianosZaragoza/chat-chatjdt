@@ -7,13 +7,26 @@
 
 > [!NOTE]
 >
-> - Cambiamos a la rama dev y hacemos: git pull
-> - Cambiamos a nuestra rama: git checkout dev_TU
+> - Cambiamos a la rama dev y hacemos: <br/>
+>
+> ```
+> git pull
+> ```
+>
+> - Cambiamos a nuestra rama: <br/>
+>
+> ```
+> git checkout <dev_TuRama>
+> ```
 
 > [!WARNING]
 >
-> - Debes estar en tu rama antes de realizar el siguiente comando
-> - El último paso es hacer: git rebase dev
+> - Debes estar en tu rama antes de realizar el siguiente comando.
+> - El último paso es hacer: <br/>
+>
+> ```
+> git rebase dev
+> ```
 
 ### PASOS MIENTRAS TRABAJAS
 
@@ -21,14 +34,17 @@
 >
 > - Haces los commits necesarios para cumplir tu tarea.
 > - Si la tarea tiene asignado un issue tenemos que poner: <br/>
-> - ```
+>
+> ```
 >   Closes #NumeroDeIssue
->   ```
+> ```
+>
 > - Si queremos poner varios autores porque hemos trabajado varios ponemos: <br/>
-> - ```
+>
+> ```
 >   Co-authored-by: <TuNombreYApellidos> <TuEmail>
 >   Co-authored-by: <TuNombreYApellidos> <TuEmail>
->   ```
+> ```
 
 ### PASOS PARA SUBIR CAMBIOS DESPUÉS DE TRABAJAR
 
