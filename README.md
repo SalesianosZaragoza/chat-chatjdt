@@ -1,21 +1,24 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-24ddc0f5d75046c5622901739e7c5dd533143b0c8e959d652212380cedb1ea36.svg)](https://classroom.github.com/a/RvxJKA0f)
 [![Open in Codespaces](https://classroom.github.com/assets/launch-codespace-7f7980b617ed060a017424585567c406b6ee15c891e84e1186181d67ecf80aa0.svg)](https://classroom.github.com/open-in-codespaces?assignment_repo_id=13264693)
 
-Primero tenemos main y dev.
+# GUÍA DE TRABAJO
 
-Luego el resto de ramas propias: dev_cls, dev_ibt, dev_jm, dev_af...
+### PASOS PARA EMPEZAR A TRABAJAR
 
--PASOS A SEGUIR PARA TRABAJAR:
-Cambiamos a la rama dev y hacemos:  
-git pull dev
-Cambiamos a nuestra rama: 
-git checkout dev_TU
-Git rebase dev ¡¡¡ESTANDO EN NUESTRA RAMA, IMPORTANTE!!!
+> [!NOTE]
+>
+> - Cambiamos a la rama dev y hacemos: git pull
+> - Cambiamos a nuestra rama: git checkout dev_TU
 
--Trabajamos lo que nos toque...
+> [!WARNING]
+>
+> - Debes estar en tu rama antes de realizar el siguiente comando
+> - El último paso es hacer: git rebase dev
 
--Una vez queramos subir los cambios tenemos que hacer lo siguiente
-Para pillar los cambios que han podido hacer el resto mientras estabas trabajando:
-git pull dev
-Y seguramente tendremos que resolver los conflictos que surjan:
-git merge dev_TU
+### PASOS PARA SUBIR CAMBIOS DESPUÉS DE TRABAJAR
+
+> [!NOTE]
+>
+> - Obtener posibles cambios que se han subido a la rama dev: git pull dev
+> - Cambiamos a la rama dev: git checkout dev
+> - Resolver posibles conflictos que surjan y una vez resueltos hacer: git merge dev_TU
