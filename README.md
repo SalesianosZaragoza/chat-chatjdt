@@ -15,10 +15,27 @@
 > - Debes estar en tu rama antes de realizar el siguiente comando
 > - El último paso es hacer: git rebase dev
 
+### PASOS MIENTRAS TRABAJAS
+
+> [!NOTE]
+>
+> - Haces los commits necesarios para cumplir tu tarea.
+> - Si la tarea tiene asignado un issue tenemos que poner: <br/>
+> - ```
+>   Closes #NumeroDeIssue
+>   ```
+> - Si queremos poner varios autores porque hemos trabajado varios ponemos: <br/>
+> - ```
+>   Co-authored-by: <TuNombreYApellidos> <TuEmail>
+>   Co-authored-by: <TuNombreYApellidos> <TuEmail>
+>   ```
+
 ### PASOS PARA SUBIR CAMBIOS DESPUÉS DE TRABAJAR
 
 > [!NOTE]
 >
-> - Cambiamos a la rama dev: git checkout dev
-> - Obtener posibles cambios que se han subido a la rama dev: git pull
-> - Resolver posibles conflictos que surjan y una vez resueltos hacer: git merge dev_TU
+> - Subes los cambios a tu rama: <br/>
+> - ```
+>   git push origin <dev_TuRama>
+>   ```
+> - Abres un New Pull Request en GitHub. Se ubica en la barra superior (3º Opcion)
