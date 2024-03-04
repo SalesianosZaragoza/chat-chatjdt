@@ -6,19 +6,19 @@ PORT = 65440
 TIEMPO_ESPERA = 100  # segundos
 
 # Inicializar la variable para almacenar el mensaje del cliente
-input_client = "" 
-channels = {} 
+input_client = ""
+channels = {}
 
 
-#Lista de strings con las opciones que se pueden usar como comandos
-
+# Lista de strings con las opciones que se pueden usar como comandos
 command_list = ["LIST", "CREATE", "CONNECT", "JOIN", "MSG"]
-#estado del comando para métodos Create y Join. Si no tiene un estado lo recibe como un mensaje en lugar de un
+# estado del comando para métodos Create y Join. Si no tiene un estado lo recibe como un mensaje en lugar de un
 estado_comando = {"comando_actual": None, "datos": None}
 
 # Diccionario de usuarios
 users = {}
 lock = threading.Lock()
+
 
 def manejarConexion(conn, addr):
     with conn:
@@ -26,42 +26,33 @@ def manejarConexion(conn, addr):
         conn.settimeout(TIEMPO_ESPERA)
 
         print(f"Conectado por {addr}")
-
-            # Decodificar y guardar el mensaje del cliente
-            input_client = data.decode()
-            username = registroUsuario(input_client, addr, conn)
-            while True:
-
+        data = conn.recv(1024)
 
         # Decodificar y guardar el mensaje del cliente
         input_client = data.decode()
-        registroUsuario(input_client, addr, conn)
+        username = registroUsuario(input_client, addr, conn)
+        
+        while True:
+            # Decodificar y guardar el mensaje del cliente
+            input_client = data.decode()
+            registroUsuario(input_client, addr, conn)
 
-                    # Modificar el mensaje a enviar de vuelta al cliente
-                    #response_to_client = f"Mensaje desde el servidor: {input_client}"
-                    # codifica el mensaje con encode y lo envia al cliente.
-                    #conn.sendall(response_to_client.encode())
+            # Modificar el mensaje a enviar de vuelta al cliente
+            response_to_client = f"Mensaje desde el servidor: {input_client}"
+            # codifica el mensaje con encode y lo envía al cliente.
+            conn.sendall(response_to_client.encode())
+
+            try:
+                manejar_comando(conn, input_client, channels, addr, username)
+            except socket.timeout:
+                print("Tiempo de espera alcanzado. Cerrando conexión.")
+                break
 
 
-                # Modificar el mensaje a enviar de vuelta al cliente
-                response_to_client = f"Mensaje desde el servidor: {input_client}"
-                # codifica el mensaje con encode y lo envía al cliente.
-                conn.sendall(response_to_client.encode())
-
-                    manejar_comando(conn, input_client, channels, addr, username)
-
-                except socket.timeout:
-                    print("Tiempo de espera alcanzado. Cerrando conexión.")
-                    break
-                
-                
-                
 def manejar_comando(conn, input_client, channels, addr, username):
-    
-
     if input_client.startswith("/"):
         comando = input_client.split()[0][1:]  # Extraer el comando sin el '/'
-        
+
         if comando == "JOIN":
             if estado_comando["comando_actual"] == "JOIN":
                 # Manejar la elección del canal después de listar los canales
@@ -70,16 +61,16 @@ def manejar_comando(conn, input_client, channels, addr, username):
                 # Listar canales y establecer el estado a JOIN
                 list_channels(conn, channels, username)
                 estado_comando["comando_actual"] = "JOIN"
-                
+
         elif comando == "CREATE":
             create_channel(conn, input_client, channels)
-            
+
         elif comando == "LIST":
             list_channels(conn, channels, username)
-            
+
         elif comando == "MSG":
             send_message(conn, input_client, channels, username)
-            
+
         else:
             conn.sendall("Comando no reconocido".encode())
     elif estado_comando["comando_actual"] == "JOIN":
@@ -89,10 +80,9 @@ def manejar_comando(conn, input_client, channels, addr, username):
     else:
         # Manejar mensajes normales si no es un comando
         broadcast_message(conn, input_client, username)
-        
 
 
-#CREAR CANAL
+# CREAR CANAL
 def create_channel(conn, input_client, channels):
     partes = input_client.split(" ", 1)
     if len(partes) < 2:
@@ -108,7 +98,7 @@ def create_channel(conn, input_client, channels):
         conn.sendall(f"Canal '{nombre_canal}' creado con éxito.".encode())
 
 
-#LISTAR LOS CANALES
+# LISTAR LOS CANALES
 def list_channels(conn, channels, username):
     if channels:
         print(channels)
@@ -123,9 +113,9 @@ def list_channels(conn, channels, username):
         mensaje_lista = "No hay canales disponibles en este momento."
 
     conn.sendall(mensaje_lista.encode())
-    
 
-#UNIR USUARIO A UN CANAL
+
+# UNIR USUARIO A UN CANAL
 def join_channel(conn, input_client, channels, username, addr):
     nombre_canal = input_client.strip()
 
@@ -140,7 +130,7 @@ def join_channel(conn, input_client, channels, username, addr):
         conn.sendall(f"El canal '{nombre_canal}' no existe.".encode())
 
 
-#ENVIAR MENSAJE AL CANAL 
+# ENVIAR MENSAJE AL CANAL
 def send_message(conn, input_client, channels, username):
     partes = input_client.split(" ", 2)
     if len(partes) < 3:
@@ -156,17 +146,16 @@ def send_message(conn, input_client, channels, username):
         conn.sendall("No estás en ese canal o el canal no existe.".encode())
 
 
-#ENVIA MENSAJE A TODOS LOS USUARIOS DE LOS CANALES. HABRÁ QUE RECORRER LA LISTA DE CANALES Y MANDAR EL MENSAJE
+# ENVIA MENSAJE A TODOS LOS USUARIOS DE LOS CANALES. HABRÁ QUE RECORRER LA LISTA DE CANALES Y MANDAR EL MENSAJE
 def broadcast_message(conn, input_client, username):
     # Como solo hay un usuario, simplemente envía el mensaje de vuelta. Habrá que cambiar esto para que llegue a todos
     conn.sendall(f"{username}: {input_client}".encode())
 
 
-   
-        
 """Metodo registroUsuario,
 Separa el mensaje del cliente en dos partes, verifica si el mensaje tiene el formato esperado
 Almacena el usuario y su dirección IP en el diccionario, envia un mensaje personalizado de confirmación al cliente"""
+
 
 def registroUsuario(input_client, addr, conn):
     partes_mensaje = input_client.split(':')
@@ -187,7 +176,7 @@ def registroUsuario(input_client, addr, conn):
     else:
         print("Mensaje no reconocido")
     return username
-    
-#Llamada al metodo establecerConexion        
-establecerConexion() 
 
+
+#Llamada al metodo establecerConexion        
+establecerConexion()
