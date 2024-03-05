@@ -1,182 +1,187 @@
 import socket
 import threading
+import sys
 
 HOST = "127.0.0.1"
 PORT = 65440
 TIEMPO_ESPERA = 100  # segundos
 
-# Inicializar la variable para almacenar el mensaje del cliente
-input_client = ""
+# Diccionario para almacenar los canales y usuarios
 channels = {}
 
-
-# Lista de strings con las opciones que se pueden usar como comandos
-command_list = ["LIST", "CREATE", "CONNECT", "JOIN", "MSG"]
-# estado del comando para métodos Create y Join. Si no tiene un estado lo recibe como un mensaje en lugar de un
-estado_comando = {"comando_actual": None, "datos": None}
-
-# Diccionario de usuarios
+# Diccionario para almacenar los usuarios y sus direcciones IP
 users = {}
 lock = threading.Lock()
 
 
-def manejarConexion(conn, addr):
+# Métodos del servidor
+def handle_connection(conn, addr):
     with conn:
-        # Establecer un tiempo de espera para el servidor
         conn.settimeout(TIEMPO_ESPERA)
-
         print(f"Conectado por {addr}")
-        data = conn.recv(1024)
-
-        # Decodificar y guardar el mensaje del cliente
-        input_client = data.decode()
-        username = registroUsuario(input_client, addr, conn)
-        
         while True:
-            # Decodificar y guardar el mensaje del cliente
-            input_client = data.decode()
-            registroUsuario(input_client, addr, conn)
-
-            # Modificar el mensaje a enviar de vuelta al cliente
-            response_to_client = f"Mensaje desde el servidor: {input_client}"
-            # codifica el mensaje con encode y lo envía al cliente.
-            conn.sendall(response_to_client.encode())
-
             try:
-                manejar_comando(conn, input_client, channels, addr, username)
+                data = conn.recv(1024)
+                if not data:
+                    break
+                username = register_user(data, addr, conn)
+                handle_command(conn, data, addr, username)
             except socket.timeout:
                 print("Tiempo de espera alcanzado. Cerrando conexión.")
                 break
+            except ConnectionResetError:
+                print("La conexión fue restablecida por el cliente.")
+                break
 
 
-def manejar_comando(conn, input_client, channels, addr, username):
+def handle_command(conn, data, addr, username):
+    global channels
+    input_client = data.decode()
     if input_client.startswith("/"):
-        comando = input_client.split()[0][1:]  # Extraer el comando sin el '/'
-
-        if comando == "JOIN":
-            if estado_comando["comando_actual"] == "JOIN":
-                # Manejar la elección del canal después de listar los canales
-                join_channel(conn, input_client, channels, username, addr)
-            else:
-                # Listar canales y establecer el estado a JOIN
-                list_channels(conn, channels, username)
-                estado_comando["comando_actual"] = "JOIN"
-
-        elif comando == "CREATE":
-            create_channel(conn, input_client, channels)
-
-        elif comando == "LIST":
-            list_channels(conn, channels, username)
-
-        elif comando == "MSG":
-            send_message(conn, input_client, channels, username)
-
+        command = input_client.split()[0][1:]  # Extraer el comando sin el '/'
+        parts = input_client.split()
+        if command == "JOIN":
+            join_channel(conn, input_client, username, addr)
+        elif command == "CREATE":
+            create_channel(conn, input_client)
+        elif command == "LIST":
+            list_channels(conn)
+        elif command == "MSG":
+            send_message(conn, input_client, username)
+        elif command == "QUIT":
+            quit_channel(conn, input_client, username)
+        elif command == "NAME":
+            change_username(conn, input_client, username)
+        elif command == "KICK":
+            kick_user(conn, input_client, username)
         else:
             conn.sendall("Comando no reconocido".encode())
-    elif estado_comando["comando_actual"] == "JOIN":
-        # Maneja el estado del comando después de listar los canales, para que el usuario pueda unirse a uno
-        join_channel(conn, input_client, channels, username, addr)
-        estado_comando["comando_actual"] = None
     else:
-        # Manejar mensajes normales si no es un comando
         broadcast_message(conn, input_client, username)
 
 
-# CREAR CANAL
-def create_channel(conn, input_client, channels):
-    partes = input_client.split(" ", 1)
-    if len(partes) < 2:
+def register_user(data, addr, conn):
+    global users
+    parts = data.decode().split(":")
+    if len(parts) == 2 and parts[0] == "USERNAME":
+        username = parts[1]
+        with lock:
+            users[username] = addr[0]
+            response_to_client = (
+                f"Bienvenido, {username}! Tu dirección IP es {addr[0]}\n"
+            )
+            conn.sendall(response_to_client.encode())
+            print(f"Usuario registrado: {username} - {addr[0]}")
+            print(f"Usuarios registrados: {users}")
+            return username
+    else:
+        print("Mensaje no reconocido")
+        return None
+
+
+def create_channel(conn, input_client):
+    global channels
+    parts = input_client.split(" ", 1)
+    if len(parts) < 2:
         conn.sendall("Formato incorrecto. Usa /CREATE [nombreDelCanal]".encode())
         return
-
-    nombre_canal = partes[1].strip()
-
-    if nombre_canal in channels:
-        conn.sendall(f"El canal '{nombre_canal}' ya existe.".encode())
+    channel_name = parts[1].strip()
+    if channel_name in channels:
+        conn.sendall(f"El canal '{channel_name}' ya existe.".encode())
     else:
-        channels[nombre_canal] = {}
-        conn.sendall(f"Canal '{nombre_canal}' creado con éxito.".encode())
+        channels[channel_name] = {}
+        conn.sendall(f"Canal '{channel_name}' creado con éxito.".encode())
 
 
-# LISTAR LOS CANALES
-def list_channels(conn, channels, username):
+def list_channels(conn):
+    global channels
     if channels:
-        print(channels)
-        mensaje_lista = "Canales disponibles:\n"
-        for canal, usuarios in channels.items():
-            mensaje_lista += f"{canal}: {len(usuarios)} usuarios\n"
-            for username, info in usuarios.items():
-                # Asegúrate de acceder correctamente a la IP
-                ip = info['ip']
-                mensaje_lista += f"    {username} (IP: {ip})\n"
+        message_list = "Canales disponibles:\n"
+        for channel, users in channels.items():
+            message_list += f"{channel}: {len(users)} usuarios\n"
+            for username, info in users.items():
+                ip = info["ip"]
+                message_list += f"    {username} (IP: {ip})\n"
     else:
-        mensaje_lista = "No hay canales disponibles en este momento."
+        message_list = "No hay canales disponibles en este momento."
+    conn.sendall(message_list.encode())
 
-    conn.sendall(mensaje_lista.encode())
 
-
-# UNIR USUARIO A UN CANAL
-def join_channel(conn, input_client, channels, username, addr):
-    nombre_canal = input_client.strip()
-
-    if nombre_canal in channels:
-        if username not in channels[nombre_canal]:
-            channels[nombre_canal][username] = {"ip": addr}
-            conn.sendall(f"Te has unido al canal '{nombre_canal}'.".encode())
-            estado_comando["comando_actual"] = None  # Restablecer el estado del comando
-        else:
-            conn.sendall(f"Ya estás en el canal '{nombre_canal}'.".encode())
+def join_channel(conn, input_client, username, addr):
+    global channels
+    parts = input_client.split(" ", 1)
+    if len(parts) < 2:
+        conn.sendall("Formato incorrecto. Usa /JOIN [nombreDelCanal]".encode())
+        return
+    channel_name = parts[1].strip()
+    if channel_name in channels:
+        if username is not None:
+            if username in channels[channel_name]:
+                conn.sendall(f"Ya estás en el canal '{channel_name}'.".encode())
+            else:
+                channels[channel_name][username] = {"ip": addr}
+                conn.sendall(f"Te has unido al canal '{channel_name}'.".encode())
     else:
-        conn.sendall(f"El canal '{nombre_canal}' no existe.".encode())
+        conn.sendall(f"El canal '{channel_name}' no existe.".encode())
 
 
-# ENVIAR MENSAJE AL CANAL
-def send_message(conn, input_client, channels, username):
-    partes = input_client.split(" ", 2)
-    if len(partes) < 3:
+def send_message(conn, input_client, username):
+    global channels
+    parts = input_client.split(" ", 2)
+    if len(parts) < 3:
         conn.sendall("Formato incorrecto. Usa /MSG [canal] [mensaje]".encode())
         return
-
-    canal, mensaje_a_enviar = partes[1], partes[2]
-
-    if canal in channels and username in channels[canal]:
-        # Como solo hay un usuario, simplemente envía el mensaje de vuelta. Habrá que cambiar esto para que llegue a todos
-        conn.sendall(f"{username} (en {canal}): {mensaje_a_enviar}".encode())
+    channel, message_to_send = parts[1], parts[2]
+    if channel in channels and username in channels[channel]:
+        conn.sendall(f"{username} (en {channel}): {message_to_send}".encode())
     else:
         conn.sendall("No estás en ese canal o el canal no existe.".encode())
 
 
-# ENVIA MENSAJE A TODOS LOS USUARIOS DE LOS CANALES. HABRÁ QUE RECORRER LA LISTA DE CANALES Y MANDAR EL MENSAJE
 def broadcast_message(conn, input_client, username):
-    # Como solo hay un usuario, simplemente envía el mensaje de vuelta. Habrá que cambiar esto para que llegue a todos
     conn.sendall(f"{username}: {input_client}".encode())
 
 
-"""Metodo registroUsuario,
-Separa el mensaje del cliente en dos partes, verifica si el mensaje tiene el formato esperado
-Almacena el usuario y su dirección IP en el diccionario, envia un mensaje personalizado de confirmación al cliente"""
+def quit_channel(conn, input_client, username):
+    pass  # Implementar lógica para que un usuario abandone un canal
 
 
-def registroUsuario(input_client, addr, conn):
-    partes_mensaje = input_client.split(':')
-    if len(partes_mensaje) == 2 and partes_mensaje[0] == "USERNAME":
-        username = partes_mensaje[1]
-
-        # Utilizar un candado para evitar problemas de concurrencia al modificar el diccionario
-        with lock:
-            # Almacenar el usuario y su dirección IP en el diccionario
-            users[username] = addr[0]
-
-            # Enviar un mensaje personalizado de confirmación al cliente
-            response_to_client = f"Bienvenido, {username}! Tu dirección IP es {addr[0]}"
-            conn.sendall(response_to_client.encode())
-
-            print(f"Usuario registrado: {username} - {addr[0]}")
-            print(f"Usuarios registrados: {users}")
-    else:
-        print("Mensaje no reconocido")
-    return username
+def change_username(conn, input_client, username):
+    pass  # Implementar lógica para que un usuario cambie su nombre
 
 
-#Llamada al metodo establecerConexion        
-establecerConexion()
+def kick_user(conn, input_client, username):
+    pass  # Implementar lógica para que un usuario sea expulsado de un canal
+
+
+# Diccionario de métodos del servidor, Tiene que estar aquí porque las funciones se definen arriba del diccionario y sino no se pueden usar.
+server_methods = {
+    "handle_connection": handle_connection,
+    "handle_command": handle_command,
+    "register_user": register_user,
+    "create_channel": create_channel,
+    "list_channels": list_channels,
+    "join_channel": join_channel,
+    "send_message": send_message,
+    "broadcast_message": broadcast_message,
+}
+
+
+def establish_connections():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind((HOST, PORT))
+            s.listen()
+            print(f"Servidor escuchando en {HOST}:{PORT}")
+            while True:
+                conn, addr = s.accept()
+                threading.Thread(
+                    target=server_methods["handle_connection"], args=(conn, addr)
+                ).start()
+        except KeyboardInterrupt:
+            print("\nCerrando el servidor...")
+            sys.exit(0)
+
+
+if __name__ == "__main__":
+    establish_connections()
