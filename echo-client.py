@@ -1,61 +1,57 @@
-import threading
 import socket
-import time
-
+import threading
+import sys
 
 HOST = "127.0.0.1"
 PORT = 65440
 
-
-
-def receive(s):
+def receive_messages(sock):
     while True:
-        try:
-            data = s.recv(1024)
-            if not data:
-                break
-            print(f"SERVIDOR: {data.decode()}")
-        except Exception as e:
-            print(f"Error al recibir datos: {e}")
+        data = sock.recv(1024)
+        if not data:
             break
+        print(data.decode())
+        
 
-def send(s):
+def send_messages(sock):
     while True:
-        try:
-            time.sleep(0.5)
-            message = input("Comando :  ")
-            
-            s.sendall(message.encode())
-        except Exception as e:
-            print(f"Error al enviar mensaje: {e}")
-            break
+        message = input("Comando: ")
+        sock.sendall(message.encode())
+        
 
 def main():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((HOST, PORT))
-        username = ""
-        print("BIENVENIDO A CHAT-JDT")
-        print("Ingrese un comando o pulse Intro para salir")
-        print("Ulitice estos comandos para moverse por el chat")
-        print(" * /CREATE ---- Crear un canal")
-        print(" * /JOIN ---- Unirse a un canal")
-        print(" * /LIST ---- Listar todos los canales")
-        print(" * /MSG [canal] [mensaje] ---- Mandar mensaje a un canal")
-        while not username:
-            username = input("Ingrese Username: ")
+        try:
+            s.connect((HOST, PORT))
+            print("BIENVENIDO A CHAT-JDT")
+            print("Ingrese un nombre de usuario para comenzar:")
+            username = input("Username: ")
             s.sendall(f"USERNAME:{username}".encode())
+            
             response_from_server = s.recv(1024).decode()
-            print({response_from_server})
+            print(response_from_server)
+            
+            print("Ingrese un comando o pulse Intro para salir")
+            print("Ulitice estos comandos para moverse por el chat")
+            print(" * /CREATE ---- Crear un canal")
+            print(" * /JOIN ---- Unirse a un canal")
+            print(" * /LIST ---- Listar todos los canales")
+            print(" * /MSG [canal] [mensaje] ---- Mandar mensaje a un canal")
+            print(" * /QUIT ---- Abandonar un canal")
+            print(" * /NAME [nuevoNombre] ---- Cambiar el nombre de usuario")
+            print(" * /KICK [canal] [usuario] ---- Expulsar a un usuario del canal")
 
-        # Crear hilos para enviar y recibir
-        hiloRecibir = threading.Thread(target=receive, args=(s,))
-        hiloMandar = threading.Thread(target=send, args=(s,))
+            # Iniciar el hilo para recibir mensajes
+            receive_thread = threading.Thread(target=receive_messages, args=(s,))
+            receive_thread.start()
 
-        hiloRecibir.start()
-        hiloMandar.start()
-        
-        hiloRecibir.join()
-        hiloMandar.join()
+            # Enviar mensajes en un bucle infinito
+            while True:
+                send_messages(s)
+        except KeyboardInterrupt:
+            print("\nCerrando la conexión...")
+            s.close()
+            sys.exit(0)
 
 if __name__ == "__main__":
     main()
