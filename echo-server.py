@@ -1,71 +1,58 @@
-#!/usr/bin/env python3
-
 import socket
+import threading
 
 HOST = "127.0.0.1"
 PORT = 65440
 TIEMPO_ESPERA = 100  # segundos
 
 # Inicializar la variable para almacenar el mensaje del cliente
-input_client = "" 
-channels = {} 
+input_client = ""
+channels = {}
 
 
-#Lista de strings con las opciones que se pueden usar como comandos
+# Lista de strings con las opciones que se pueden usar como comandos
 command_list = ["LIST", "CREATE", "CONNECT", "JOIN", "MSG"]
-#estado del comando para métodos Create y Join. Si no tiene un estado lo recibe como un mensaje en lugar de un
+# estado del comando para métodos Create y Join. Si no tiene un estado lo recibe como un mensaje en lugar de un
 estado_comando = {"comando_actual": None, "datos": None}
 
-#Diccionario de usuarios
+# Diccionario de usuarios
 users = {}
-def establecerConexion():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((HOST, PORT))
-        s.listen()
-        #conn y addr son variables que se usan para almacenar la conexion y la direccion del cliente
-        conn, addr = s.accept()
-        with conn:
-            # Establecer un tiempo de espera para el servidor
-            conn.settimeout(TIEMPO_ESPERA)
+lock = threading.Lock()
 
-            print(f"Conectado por {addr}")
 
-            # Si el usuario no está registrado, solicitar el registro
-            data = conn.recv(1024)
-            if not data:
-                print("Cliente desconectado")
+def manejarConexion(conn, addr):
+    with conn:
+        # Establecer un tiempo de espera para el servidor
+        conn.settimeout(TIEMPO_ESPERA)
 
+        print(f"Conectado por {addr}")
+        data = conn.recv(1024)
+
+        # Decodificar y guardar el mensaje del cliente
+        input_client = data.decode()
+        username = registroUsuario(input_client, addr, conn)
+        
+        while True:
             # Decodificar y guardar el mensaje del cliente
             input_client = data.decode()
-            username = registroUsuario(input_client, addr, conn)
-            while True:
+            registroUsuario(input_client, addr, conn)
 
-                try:
-                    data = conn.recv(1024)
-                    if not data:
-                        print("Cliente desconectado")
-                        break
-                    input_client = data.decode()
+            # Modificar el mensaje a enviar de vuelta al cliente
+            response_to_client = f"Mensaje desde el servidor: {input_client}"
+            # codifica el mensaje con encode y lo envía al cliente.
+            conn.sendall(response_to_client.encode())
 
-                    # Modificar el mensaje a enviar de vuelta al cliente
-                    #response_to_client = f"Mensaje desde el servidor: {input_client}"
-                    # codifica el mensaje con encode y lo envia al cliente.
-                    #conn.sendall(response_to_client.encode())
+            try:
+                manejar_comando(conn, input_client, channels, addr, username)
+            except socket.timeout:
+                print("Tiempo de espera alcanzado. Cerrando conexión.")
+                break
 
 
-                    manejar_comando(conn, input_client, channels, addr, username)
-
-                except socket.timeout:
-                    print("Tiempo de espera alcanzado. Cerrando conexión.")
-                    break
-                
-                
-                
 def manejar_comando(conn, input_client, channels, addr, username):
-    
     if input_client.startswith("/"):
         comando = input_client.split()[0][1:]  # Extraer el comando sin el '/'
-        
+
         if comando == "JOIN":
             if estado_comando["comando_actual"] == "JOIN":
                 # Manejar la elección del canal después de listar los canales
@@ -74,24 +61,18 @@ def manejar_comando(conn, input_client, channels, addr, username):
                 # Listar canales y establecer el estado a JOIN
                 list_channels(conn, channels, username)
                 estado_comando["comando_actual"] = "JOIN"
-                
+
         elif comando == "CREATE":
-            # Establecer el estado para el comando CREATE y esperar el siguiente mensaje para el nombre del canal
-            estado_comando["comando_actual"] = "CREATE"
-            conn.sendall("Por favor, especifique un nombre para el canal".encode())
-            
+            create_channel(conn, input_client, channels)
+
         elif comando == "LIST":
             list_channels(conn, channels, username)
-            
+
         elif comando == "MSG":
             send_message(conn, input_client, channels, username)
-            
+
         else:
             conn.sendall("Comando no reconocido".encode())
-    elif estado_comando["comando_actual"] == "CREATE":
-        # Aquí se maneja la creación del canal después de recibir el nombre del canal
-        create_channel(conn, input_client, channels)
-        estado_comando["comando_actual"] = None
     elif estado_comando["comando_actual"] == "JOIN":
         # Maneja el estado del comando después de listar los canales, para que el usuario pueda unirse a uno
         join_channel(conn, input_client, channels, username, addr)
@@ -99,38 +80,25 @@ def manejar_comando(conn, input_client, channels, addr, username):
     else:
         # Manejar mensajes normales si no es un comando
         broadcast_message(conn, input_client, username)
-        
 
 
-#CREAR CANAL
+# CREAR CANAL
 def create_channel(conn, input_client, channels):
-    if estado_comando["comando_actual"] == "CREATE":
-        # El nombre del canal se espera en input_client
-        nombre_canal = input_client.strip()
+    partes = input_client.split(" ", 1)
+    if len(partes) < 2:
+        conn.sendall("Formato incorrecto. Usa /CREATE [nombreDelCanal]".encode())
+        return
 
-        if not nombre_canal:
-            conn.sendall("El nombre del canal no puede estar vacío. Intente de nuevo.".encode())
-            return
+    nombre_canal = partes[1].strip()
 
-        if nombre_canal in channels:
-            conn.sendall(f"El canal '{nombre_canal}' ya existe.".encode())
-        else:
-            # Crear el nuevo canal
-            channels[nombre_canal] = {}
-            conn.sendall(f"Canal '{nombre_canal}' creado con éxito.".encode())
-
-        # Restablecer el estado del comando
-        estado_comando["comando_actual"] = None
+    if nombre_canal in channels:
+        conn.sendall(f"El canal '{nombre_canal}' ya existe.".encode())
     else:
-        # Esta es la primera parte del comando CREATE
-        # Configurar el estado para esperar el nombre del canal
-        estado_comando["comando_actual"] = "CREATE"
-        conn.sendall("Por favor, especifique un nombre para el canal".encode())
+        channels[nombre_canal] = {}
+        conn.sendall(f"Canal '{nombre_canal}' creado con éxito.".encode())
 
 
-
-
-#LISTAR LOS CANALES
+# LISTAR LOS CANALES
 def list_channels(conn, channels, username):
     if channels:
         print(channels)
@@ -145,9 +113,9 @@ def list_channels(conn, channels, username):
         mensaje_lista = "No hay canales disponibles en este momento."
 
     conn.sendall(mensaje_lista.encode())
-    
 
-#UNIR USUARIO A UN CANAL
+
+# UNIR USUARIO A UN CANAL
 def join_channel(conn, input_client, channels, username, addr):
     nombre_canal = input_client.strip()
 
@@ -162,7 +130,7 @@ def join_channel(conn, input_client, channels, username, addr):
         conn.sendall(f"El canal '{nombre_canal}' no existe.".encode())
 
 
-#ENVIAR MENSAJE AL CANAL 
+# ENVIAR MENSAJE AL CANAL
 def send_message(conn, input_client, channels, username):
     partes = input_client.split(" ", 2)
     if len(partes) < 3:
@@ -178,36 +146,37 @@ def send_message(conn, input_client, channels, username):
         conn.sendall("No estás en ese canal o el canal no existe.".encode())
 
 
-#ENVIA MENSAJE A TODOS LOS USUARIOS DE LOS CANALES. HABRÁ QUE RECORRER LA LISTA DE CANALES Y MANDAR EL MENSAJE
+# ENVIA MENSAJE A TODOS LOS USUARIOS DE LOS CANALES. HABRÁ QUE RECORRER LA LISTA DE CANALES Y MANDAR EL MENSAJE
 def broadcast_message(conn, input_client, username):
     # Como solo hay un usuario, simplemente envía el mensaje de vuelta. Habrá que cambiar esto para que llegue a todos
     conn.sendall(f"{username}: {input_client}".encode())
 
 
-   
-        
 """Metodo registroUsuario,
 Separa el mensaje del cliente en dos partes, verifica si el mensaje tiene el formato esperado
 Almacena el usuario y su dirección IP en el diccionario, envia un mensaje personalizado de confirmación al cliente"""
+
+
 def registroUsuario(input_client, addr, conn):
-    # Separar el mensaje del cliente en dos partes                
     partes_mensaje = input_client.split(':')
-    # Verificar si el mensaje tiene el formato esperado
     if len(partes_mensaje) == 2 and partes_mensaje[0] == "USERNAME":
         username = partes_mensaje[1]
 
-        # Almacenar el usuario y su dirección IP en el diccionario
-        users[username] = addr[0]
+        # Utilizar un candado para evitar problemas de concurrencia al modificar el diccionario
+        with lock:
+            # Almacenar el usuario y su dirección IP en el diccionario
+            users[username] = addr[0]
 
-        # Enviar un mensaje personalizado de confirmación al cliente
-        response_to_client = f"Bienvenido, {username}! Tu dirección IP es {addr[0]}"
-        conn.sendall(response_to_client.encode())
+            # Enviar un mensaje personalizado de confirmación al cliente
+            response_to_client = f"Bienvenido, {username}! Tu dirección IP es {addr[0]}"
+            conn.sendall(response_to_client.encode())
 
-        print(f"Usuario registrado: {username} - {addr[0]}")
-        print(f"Usuarios registrados: {users}")
+            print(f"Usuario registrado: {username} - {addr[0]}")
+            print(f"Usuarios registrados: {users}")
     else:
         print("Mensaje no reconocido")
     return username
-    
+
+
 #Llamada al metodo establecerConexion        
-establecerConexion() 
+establecerConexion()
