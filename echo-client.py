@@ -3,7 +3,7 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65435
+PORT = 65431
 
 def receive_messages(sock):
     while True:
@@ -16,7 +16,9 @@ def receive_messages(sock):
 def send_messages(sock):
     while True:
         message = input("Comando: ")
-        sock.sendall(message.encode())
+        # Codifica el mensaje, ignorando caracteres problemáticos
+        encoded_message = message.encode('utf-8', errors='ignore')
+        sock.sendall(encoded_message)
         
 
 def main():
@@ -37,7 +39,7 @@ def main():
             print(" * /JOIN [canal] ---- Unirse a un canal")
             print(" * /LIST ---- Listar todos los canales")
             print(" * /MSG [canal] [mensaje] ---- Mandar mensaje a un canal")
-            print(" * /QUIT ---- Abandonar un canal")
+            print(" * /QUIT [canal] ---- Abandonar un canal")
             print(" * /NAME [nuevoNombre] ---- Cambiar el nombre de usuario")
             print(" * /KICK [canal] [usuario] ---- Expulsar a un usuario del canal")
 
