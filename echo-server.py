@@ -3,7 +3,7 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65435
+PORT = 65431
 TIEMPO_ESPERA = 100  # segundos
 
 # Diccionario para almacenar los canales y usuarios
@@ -53,7 +53,7 @@ def handle_command(conn, data, addr, username):
         elif command == "QUIT":
             quit_channel(conn, input_client, username)
         elif command == "NAME":
-            change_username(conn, input_client, username)
+            change_username(conn, input_client, username, addr)
         elif command == "KICK":
             kick_user(conn, input_client, username)
         else:
@@ -141,15 +141,56 @@ def broadcast_message(conn, input_client, username):
 
 
 def quit_channel(conn, input_client, username):
-    pass  # Implementar lógica para que un usuario abandone un canal
+    global channels
+    parts = input_client.split()
+    if len(parts) != 2:
+        conn.sendall("Formato incorrecto. Usa /QUIT [nombre_del_canal]".encode())
+        return
+    channel_name = parts[1]
+    if channel_name in channels and username in channels[channel_name]:
+        with lock:
+            del channels[channel_name][username]  # Remueve al usuario del canal
+        conn.sendall(f"Has abandonado el canal {channel_name}.".encode())
+    else:
+        conn.sendall("No estás en ese canal o el canal no existe.".encode())
 
+def change_username(conn, input_client, username, addr):
+    global users, channels, lock
+    parts = input_client.split()
+    if len(parts) != 2:
+        conn.sendall("Formato incorrecto. Usa /NAME [nuevo_nombre]".encode())
+        return
+    new_username = parts[1]
+    if new_username in users:
+        conn.sendall("Ese nombre de usuario ya está en uso.".encode())
+    else:
+        with lock:
+           # Actualiza el diccionario de usuarios
+            if username in users:
+                del users[username]
+            users[new_username] = addr[0]
 
-def change_username(conn, input_client, username):
-    pass  # Implementar lógica para que un usuario cambie su nombre
+            # Actualiza el nombre de usuario en todos los canales
+            for channel in channels.values():
+                if username in channel:
+                    channel[new_username] = channel.pop(username)
+
+        conn.sendall(f"Tu nombre de usuario ha sido cambiado a {new_username}.".encode())
 
 
 def kick_user(conn, input_client, username):
-    pass  # Implementar lógica para que un usuario sea expulsado de un canal
+    global channels
+    parts = input_client.split()
+    if len(parts) != 3:
+        conn.sendall("Formato incorrecto. Usa /KICK [nombre_del_canal] [usuario]".encode())
+        return
+    channel_name, user_to_kick = parts[1], parts[2]
+    if channel_name in channels and user_to_kick in channels[channel_name]:
+        with lock:
+            del channels[channel_name][user_to_kick]  # Expulsa al usuario del canal
+        conn.sendall(f"El usuario {user_to_kick} ha sido expulsado del canal {channel_name}.".encode())
+    else:
+        conn.sendall("El usuario no está en ese canal o el canal no existe.".encode())
 
 
 # Diccionario de métodos del servidor, Tiene que estar aquí porque las funciones se definen arriba del diccionario y sino no se pueden usar.
