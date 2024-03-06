@@ -3,7 +3,7 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65440
+PORT = 65435
 TIEMPO_ESPERA = 100  # segundos
 
 # Diccionario para almacenar los canales y usuarios
@@ -18,13 +18,15 @@ lock = threading.Lock()
 def handle_connection(conn, addr):
     with conn:
         conn.settimeout(TIEMPO_ESPERA)
+        username = None
         print(f"Conectado por {addr}")
         while True:
             try:
                 data = conn.recv(1024)
                 if not data:
                     break
-                username = register_user(data, addr, conn)
+                if username is None:  # Solo intenta registrar si no tenemos un username aún
+                    username = register_user(data, addr, conn) # Siempre pasa el username actual
                 handle_command(conn, data, addr, username)
             except socket.timeout:
                 print("Tiempo de espera alcanzado. Cerrando conexión.")
@@ -63,21 +65,17 @@ def handle_command(conn, data, addr, username):
 def register_user(data, addr, conn):
     global users
     parts = data.decode().split(":")
-    if len(parts) == 2 and parts[0] == "USERNAME":
+    if parts[0] == "USERNAME":
         username = parts[1]
-        with lock:
-            users[username] = addr[0]
-            response_to_client = (
-                f"Bienvenido, {username}! Tu dirección IP es {addr[0]}\n"
-            )
-            conn.sendall(response_to_client.encode())
-            print(f"Usuario registrado: {username} - {addr[0]}")
-            print(f"Usuarios registrados: {users}")
-            return username
+        if username not in users:  # Solo registra si el usuario es nuevo
+            with lock:
+                users[username] = addr[0]
+                response_to_client = f"Bienvenido, {username}! Tu dirección IP es {addr[0]}\n"
+                conn.sendall(response_to_client.encode())
+                print(f"Usuario registrado: {username} - {addr[0]}")
+        return username  # Devuelve el username registrado o ya existente
     else:
-        print("Mensaje no reconocido")
         return None
-
 
 def create_channel(conn, input_client):
     global channels
@@ -108,21 +106,21 @@ def list_channels(conn):
 
 
 def join_channel(conn, input_client, username, addr):
-    global channels
+    global channels, users
     parts = input_client.split(" ", 1)
     if len(parts) < 2:
         conn.sendall("Formato incorrecto. Usa /JOIN [nombreDelCanal]".encode())
         return
     channel_name = parts[1].strip()
     if channel_name in channels:
-        if username is not None:
-            if username in channels[channel_name]:
-                conn.sendall(f"Ya estás en el canal '{channel_name}'.".encode())
-            else:
-                channels[channel_name][username] = {"ip": addr}
-                conn.sendall(f"Te has unido al canal '{channel_name}'.".encode())
+        if username not in channels[channel_name]:
+            channels[channel_name][username] = {"ip": addr}
+            conn.sendall(f"Te has unido al canal '{channel_name}'.".encode())
+        else:
+            conn.sendall(f"Ya estás en el canal '{channel_name}'.".encode())
     else:
         conn.sendall(f"El canal '{channel_name}' no existe.".encode())
+
 
 
 def send_message(conn, input_client, username):

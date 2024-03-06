@@ -3,14 +3,14 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65440
+PORT = 65435
 
 def receive_messages(sock):
     while True:
         data = sock.recv(1024)
         if not data:
             break
-        print(data.decode())
+        print(data.decode().rstrip())
         
 
 def send_messages(sock):
@@ -33,8 +33,8 @@ def main():
             
             print("Ingrese un comando o pulse Intro para salir")
             print("Ulitice estos comandos para moverse por el chat")
-            print(" * /CREATE ---- Crear un canal")
-            print(" * /JOIN ---- Unirse a un canal")
+            print(" * /CREATE [canal] ---- Crear un canal")
+            print(" * /JOIN [canal] ---- Unirse a un canal")
             print(" * /LIST ---- Listar todos los canales")
             print(" * /MSG [canal] [mensaje] ---- Mandar mensaje a un canal")
             print(" * /QUIT ---- Abandonar un canal")
