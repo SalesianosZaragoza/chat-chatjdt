@@ -3,7 +3,7 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65436
+PORT = 65433
 TIEMPO_ESPERA = 100  # segundos
 
 # Diccionario para almacenar los canales y usuarios
@@ -71,7 +71,7 @@ def register_user(data, addr, conn):
         username = parts[1]
         if username not in users:  # Solo registra si el usuario es nuevo
             with lock:
-                users[username] = addr[0]
+                users[username] = {"ip": addr[0], "conn": conn}
                 response_to_client = f"Bienvenido, {username}! Tu dirección IP es {addr[0]}\n"
                 conn.sendall(response_to_client.encode())
                 print(f"Usuario registrado: {username} - {addr[0]}")
@@ -117,14 +117,14 @@ def join_channel(conn, input_client, username, addr):
         conn.sendall("Formato incorrecto. Usa /JOIN [nombreDelCanal]".encode('utf-8'))
         return
     channel_name = parts[1].strip()
-    if channel_name in channels:
-        if username not in channels[channel_name]:
-            channels[channel_name][username] = {"ip": addr}
-            conn.sendall(f"Te has unido al canal '{channel_name}'.".encode('utf-8'))
-        else:
-            conn.sendall(f"Ya estás en el canal '{channel_name}'.".encode('utf-8'))
+    if channel_name not in channels:
+        channels[channel_name] = {}
+    # Asegúrate de que el usuario está registrado antes de añadirlo a un canal.
+    if username in users:
+        channels[channel_name][username] = users[username]
+        conn.sendall(f"Te has unido al canal '{channel_name}'.".encode('utf-8'))
     else:
-        conn.sendall(f"El canal '{channel_name}' no existe.".encode('utf-8'))
+        conn.sendall("Primero debes registrarte.".encode('utf-8'))
 
 
 
@@ -135,11 +135,13 @@ def send_message(conn, input_client, username):
         conn.sendall("Formato incorrecto. Usa /MSG [canal] [mensaje]".encode('utf-8'))
         return
     channel, message_to_send = parts[1], parts[2]
-    if channel in channels and username in channels[channel]:
-        response_to_client = (f"{username} (en {channel}): {message_to_send}")
-        conn.sendall(response_to_client.encode('utf-8'))
-    else:
-        conn.sendall("No estás en ese canal o el canal no existe.".encode('utf-8'))
+    if channel in channels:
+        for user, user_info in channels[channel].items():
+            user_conn = user_info["conn"]
+            try:
+                user_conn.sendall(f"{username} (en {channel}): {message_to_send}".encode('utf-8'))
+            except Exception as e:
+                print(f"Error al enviar mensaje a {user}: {e}")
 
 
 def send_whisper(conn, input_client, username):
