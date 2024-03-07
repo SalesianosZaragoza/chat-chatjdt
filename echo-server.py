@@ -3,7 +3,7 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65431
+PORT = 65436
 TIEMPO_ESPERA = 100  # segundos
 
 # Diccionario para almacenar los canales y usuarios
@@ -50,6 +50,8 @@ def handle_command(conn, data, addr, username):
             list_channels(conn)
         elif command == "MSG":
             send_message(conn, input_client, username)
+        elif command == "WHISPER":
+            send_whisper(conn, input_client, username)
         elif command == "QUIT":
             quit_channel(conn, input_client, username)
         elif command == "NAME":
@@ -81,14 +83,17 @@ def create_channel(conn, input_client):
     global channels
     parts = input_client.split(" ", 1)
     if len(parts) < 2:
-        conn.sendall("Formato incorrecto. Usa /CREATE [nombreDelCanal]".encode())
+        response_to_client = "Formato incorrecto. Usa /CREATE [nombreDelCanal]"
+        conn.sendall(response_to_client.encode('utf-8'))
         return
     channel_name = parts[1].strip()
     if channel_name in channels:
-        conn.sendall(f"El canal '{channel_name}' ya existe.".encode())
+        response_to_client = (f"El canal '{channel_name}' ya existe.")
+        conn.sendall(response_to_client.encode('utf-8'))
     else:
         channels[channel_name] = {}
-        conn.sendall(f"Canal '{channel_name}' creado con éxito.".encode())
+        response_to_client = (f"Canal '{channel_name}' creado con éxito.")
+        conn.sendall(response_to_client.encode('utf-8'))
 
 
 def list_channels(conn):
@@ -102,24 +107,24 @@ def list_channels(conn):
                 message_list += f"    {username} (IP: {ip})\n"
     else:
         message_list = "No hay canales disponibles en este momento."
-    conn.sendall(message_list.encode())
+    conn.sendall(message_list.encode('utf-8'))
 
 
 def join_channel(conn, input_client, username, addr):
     global channels, users
     parts = input_client.split(" ", 1)
     if len(parts) < 2:
-        conn.sendall("Formato incorrecto. Usa /JOIN [nombreDelCanal]".encode())
+        conn.sendall("Formato incorrecto. Usa /JOIN [nombreDelCanal]".encode('utf-8'))
         return
     channel_name = parts[1].strip()
     if channel_name in channels:
         if username not in channels[channel_name]:
             channels[channel_name][username] = {"ip": addr}
-            conn.sendall(f"Te has unido al canal '{channel_name}'.".encode())
+            conn.sendall(f"Te has unido al canal '{channel_name}'.".encode('utf-8'))
         else:
-            conn.sendall(f"Ya estás en el canal '{channel_name}'.".encode())
+            conn.sendall(f"Ya estás en el canal '{channel_name}'.".encode('utf-8'))
     else:
-        conn.sendall(f"El canal '{channel_name}' no existe.".encode())
+        conn.sendall(f"El canal '{channel_name}' no existe.".encode('utf-8'))
 
 
 
@@ -127,42 +132,47 @@ def send_message(conn, input_client, username):
     global channels
     parts = input_client.split(" ", 2)
     if len(parts) < 3:
-        conn.sendall("Formato incorrecto. Usa /MSG [canal] [mensaje]".encode())
+        conn.sendall("Formato incorrecto. Usa /MSG [canal] [mensaje]".encode('utf-8'))
         return
     channel, message_to_send = parts[1], parts[2]
     if channel in channels and username in channels[channel]:
-        conn.sendall(f"{username} (en {channel}): {message_to_send}".encode())
+        response_to_client = (f"{username} (en {channel}): {message_to_send}")
+        conn.sendall(response_to_client.encode('utf-8'))
     else:
-        conn.sendall("No estás en ese canal o el canal no existe.".encode())
+        conn.sendall("No estás en ese canal o el canal no existe.".encode('utf-8'))
+
+
+def send_whisper(conn, input_client, username):
+    pass
 
 
 def broadcast_message(conn, input_client, username):
-    conn.sendall(f"{username}: {input_client}".encode())
+    conn.sendall(f"{username}: {input_client}".encode('utf-8'))
 
 
 def quit_channel(conn, input_client, username):
     global channels
     parts = input_client.split()
     if len(parts) != 2:
-        conn.sendall("Formato incorrecto. Usa /QUIT [nombre_del_canal]".encode())
+        conn.sendall("Formato incorrecto. Usa /QUIT [nombre_del_canal]".encode('utf-8'))
         return
     channel_name = parts[1]
     if channel_name in channels and username in channels[channel_name]:
         with lock:
             del channels[channel_name][username]  # Remueve al usuario del canal
-        conn.sendall(f"Has abandonado el canal {channel_name}.".encode())
+        conn.sendall(f"Has abandonado el canal {channel_name}.".encode('utf-8'))
     else:
-        conn.sendall("No estás en ese canal o el canal no existe.".encode())
+        conn.sendall("No estás en ese canal o el canal no existe.".encode('utf-8'))
 
 def change_username(conn, input_client, username, addr):
     global users, channels, lock
     parts = input_client.split()
     if len(parts) != 2:
-        conn.sendall("Formato incorrecto. Usa /NAME [nuevo_nombre]".encode())
+        conn.sendall("Formato incorrecto. Usa /NAME [nuevo_nombre]".encode('utf-8'))
         return
     new_username = parts[1]
     if new_username in users:
-        conn.sendall("Ese nombre de usuario ya está en uso.".encode())
+        conn.sendall("Ese nombre de usuario ya está en uso.".encode('utf-8'))
     else:
         with lock:
            # Actualiza el diccionario de usuarios
@@ -175,7 +185,7 @@ def change_username(conn, input_client, username, addr):
                 if username in channel:
                     channel[new_username] = channel.pop(username)
 
-        conn.sendall(f"Tu nombre de usuario ha sido cambiado a {new_username}.".encode())
+        conn.sendall(f"Tu nombre de usuario ha sido cambiado a {new_username}.".encode('utf-8'))
 
 
 def kick_user(conn, input_client, username):
