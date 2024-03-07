@@ -1,3 +1,5 @@
+#!pip install rich
+#!pip install prompt_toolkit
 from rich.console import Console
 from prompt_toolkit import PromptSession
 from prompt_toolkit.styles import Style
@@ -7,7 +9,7 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65436
+PORT = 65433
 
 console = Console()
 style = Style.from_dict({
