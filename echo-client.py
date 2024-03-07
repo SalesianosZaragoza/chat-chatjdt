@@ -1,5 +1,3 @@
-#!pip install rich
-#!pip install prompt_toolkit
 from rich.console import Console
 from prompt_toolkit import PromptSession
 from prompt_toolkit.styles import Style
