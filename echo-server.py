@@ -4,7 +4,7 @@ import sys
 
 HOST = "127.0.0.1"
 PORT = 65439
-TIEMPO_ESPERA = 100  # segundos
+TIEMPO_ESPERA = 20  # segundos
 
 # Diccionario para almacenar los canales y usuarios
 channels = {}
@@ -33,7 +33,14 @@ def handle_connection(conn, addr):
                     )  # Siempre pasa el username actual
                 handle_command(conn, data, addr, username)
             except socket.timeout:
-                print("Tiempo de espera alcanzado. Cerrando conexión.")
+                # Si el tiempo de espera se alcanza, cierra la conexión del cliente.
+                print(
+                    "Tiempo de espera alcanzado. Cerrando conexión del cliente("
+                    + username
+                    + ") con dirección IP ("
+                    + str(addr)
+                    + ")"
+                )
                 break
             except ConnectionResetError:
                 print("La conexión fue restablecida por el cliente.")
@@ -311,7 +318,7 @@ def establish_connections():
                     target=server_methods["handle_connection"], args=(conn, addr)
                 ).start()
         except KeyboardInterrupt:
-            print("\nCerrando el servidor...")
+            print("\nCerrando el servidor de CHAT-JDT...")
             sys.exit(0)
 
 
