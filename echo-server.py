@@ -3,8 +3,8 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65438
-TIEMPO_ESPERA = 100  # segundos
+PORT = 65439
+TIEMPO_ESPERA = 20  # segundos
 
 # Diccionario para almacenar los canales y usuarios
 channels = {}
@@ -33,7 +33,14 @@ def handle_connection(conn, addr):
                     )  # Siempre pasa el username actual
                 handle_command(conn, data, addr, username)
             except socket.timeout:
-                print("Tiempo de espera alcanzado. Cerrando conexión.")
+                # Si el tiempo de espera se alcanza, cierra la conexión del cliente.
+                print(
+                    "Tiempo de espera alcanzado. Cerrando conexión del cliente("
+                    + username
+                    + ") con dirección IP ("
+                    + str(addr)
+                    + ")"
+                )
                 break
             except ConnectionResetError:
                 print("La conexión fue restablecida por el cliente.")
@@ -119,7 +126,8 @@ def list_channels(conn):
     else:
         message_list = "No hay canales disponibles en este momento."
     conn.sendall(message_list.encode("utf-8"))
-    
+
+
 def list_users(conn):
     global users
     if users:
@@ -165,7 +173,7 @@ def send_message(conn, input_client, username):
             user_conn = user_info["conn"]
             try:
                 user_conn.sendall(
-                    f"{username} (en {channel}): {message_to_send}".encode("utf-8")
+                    f"{username} (dijo en {channel}): {message_to_send}".encode("utf-8")
                 )
             except Exception as e:
                 print(f"Error al enviar mensaje a {user}: {e}")
@@ -175,7 +183,9 @@ def send_whisper(conn, input_client, username):
     global users
     parts = input_client.split(" ", 2)
     if len(parts) < 3:
-        conn.sendall("Formato incorrecto. Usa /WHISPER [nombreUsuario] [mensaje]".encode("utf-8"))
+        conn.sendall(
+            "Formato incorrecto. Usa /WHISPER [nombreUsuario] [mensaje]".encode("utf-8")
+        )
         return
 
     recipient_username = parts[1]
@@ -189,9 +199,15 @@ def send_whisper(conn, input_client, username):
             )
         except Exception as e:
             print(f"Error al enviar mensaje a {recipient_username}: {e}")
-            conn.sendall(f"No se pudo enviar el mensaje a {recipient_username}.".encode("utf-8"))
+            conn.sendall(
+                f"No se pudo enviar el mensaje a {recipient_username}.".encode("utf-8")
+            )
     else:
-        conn.sendall(f"El usuario {recipient_username} no está disponible o no está registrado.".encode("utf-8"))
+        conn.sendall(
+            f"El usuario {recipient_username} no está disponible o no está registrado.".encode(
+                "utf-8"
+            )
+        )
 
 
 def broadcast_message(conn, input_client, username):
@@ -260,17 +276,17 @@ def kick_user(conn, input_client, username):
 
 def help_command(conn):
     comandos = [
-            " * [bold magenta]/CREATE[/]  [[bold magenta]canal[/bold magenta]]  ---- Crear un canal",
-            " * [bold magenta]/JOIN[/] [[bold magenta]canal[/bold magenta]]  ---- Unirse a un canal",
-            " * [bold magenta]/LIST[/] ---- Listar todos los canales",
-            " * [bold magenta]/USERS[/]  ---- Mostrar todos los usuarios en el canal actual",
-            " * [bold magenta]/MSG[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]mensaje[/bold magenta]] ---- Mandar mensaje a un canal",
-            " * [bold magenta]/WHISPER[/] [[bold magenta]nombreUsuario[/bold magenta]] [[bold magenta]mensaje[/bold magenta]] ---- Mandar un mensaje a un usuario",
-            " * [bold magenta]/QUIT[/] [[bold magenta]canal[/bold magenta]] ---- Abandonar un canal",
-            " * [bold magenta]/NAME[/] [[bold magenta]nuevoNombre[/bold magenta]] ---- Cambiar el nombre de usuario",
-            " * [bold magenta]/KICK[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]usuario[/bold magenta]] ---- Expulsar a un usuario del canal",
-            " * [bold magenta]/HELP[/] ---- Mostrar la lista de comandos disponibles",
-            ]
+        " * [bold magenta]/CREATE[/]  [[bold magenta]canal[/bold magenta]]  ---- Crear un canal",
+        " * [bold magenta]/JOIN[/] [[bold magenta]canal[/bold magenta]]  ---- Unirse a un canal",
+        " * [bold magenta]/LIST[/] ---- Listar todos los canales",
+        " * [bold magenta]/USERS[/]  ---- Mostrar todos los usuarios en el canal actual",
+        " * [bold magenta]/MSG[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]mensaje[/bold magenta]] ---- Mandar mensaje a un canal",
+        " * [bold magenta]/WHISPER[/] [[bold magenta]nombreUsuario[/bold magenta]] [[bold magenta]mensaje[/bold magenta]] ---- Mandar un mensaje a un usuario",
+        " * [bold magenta]/QUIT[/] [[bold magenta]canal[/bold magenta]] ---- Abandonar un canal",
+        " * [bold magenta]/NAME[/] [[bold magenta]nuevoNombre[/bold magenta]] ---- Cambiar el nombre de usuario",
+        " * [bold magenta]/KICK[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]usuario[/bold magenta]] ---- Expulsar a un usuario del canal",
+        " * [bold magenta]/HELP[/] ---- Mostrar la lista de comandos disponibles",
+    ]
     help_message = "Ulitice estos comandos para moverse por el chat:\n" + "\n".join(
         comandos
     )
@@ -302,7 +318,7 @@ def establish_connections():
                     target=server_methods["handle_connection"], args=(conn, addr)
                 ).start()
         except KeyboardInterrupt:
-            print("\nCerrando el servidor...")
+            print("\nCerrando el servidor de CHAT-JDT...")
             sys.exit(0)
 
 
