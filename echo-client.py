@@ -7,7 +7,7 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65435
+PORT = 65437
 
 console = Console()
 style = Style.from_dict(
@@ -64,13 +64,14 @@ def main():
             " * [bold magenta]/CREATE[/]  [[bold magenta]canal[/bold magenta]]  ---- Crear un canal",
             " * [bold magenta]/JOIN[/] [[bold magenta]canal[/bold magenta]]  ---- Unirse a un canal",
             " * [bold magenta]/LIST[/] ---- Listar todos los canales",
+            " * [bold magenta]/USERS[/]  ---- Mostrar todos los usuarios en el canal actual",
             " * [bold magenta]/MSG[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]mensaje[/bold magenta]] ---- Mandar mensaje a un canal",
             " * [bold magenta]/WHISPER[/] [[bold magenta]nombreUsuario[/bold magenta]] [[bold magenta]mensaje[/bold magenta]] ---- Mandar un mensaje a un usuario",
             " * [bold magenta]/QUIT[/] [[bold magenta]canal[/bold magenta]] ---- Abandonar un canal",
             " * [bold magenta]/NAME[/] [[bold magenta]nuevoNombre[/bold magenta]] ---- Cambiar el nombre de usuario",
             " * [bold magenta]/KICK[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]usuario[/bold magenta]] ---- Expulsar a un usuario del canal",
             " * [bold magenta]/HELP[/] ---- Mostrar la lista de comandos disponibles",
-        ]
+            ]
 
         for comando in comandos:
             console.print(comando)

@@ -3,7 +3,7 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65435
+PORT = 65437
 TIEMPO_ESPERA = 100  # segundos
 
 # Diccionario para almacenar los canales y usuarios
@@ -62,6 +62,8 @@ def handle_command(conn, data, addr, username):
             change_username(conn, input_client, username, addr)
         elif command == "KICK":
             kick_user(conn, input_client, username)
+        elif command == "USERS":
+            list_users(conn)
         elif command == "HELP":
             help_command(conn)  # Agregamos el manejo del comando HELP
         else:
@@ -116,6 +118,17 @@ def list_channels(conn):
                 message_list += f"    {username} (IP: {ip})\n"
     else:
         message_list = "No hay canales disponibles en este momento."
+    conn.sendall(message_list.encode("utf-8"))
+    
+def list_users(conn):
+    global users
+    if users:
+        message_list = "usuarios disponibles:\n"
+        for username, info in users.items():
+            ip = info["ip"]
+            message_list += f"{username} (IP: {ip})\n"
+    else:
+        message_list = "No hay usuarios disponibles en este momento."
     conn.sendall(message_list.encode("utf-8"))
 
 
@@ -228,16 +241,17 @@ def kick_user(conn, input_client, username):
 
 def help_command(conn):
     comandos = [
-        " * [bold magenta]/CREATE[/]  [[bold magenta]canal[/bold magenta]]  ---- Crear un canal",
-        " * [bold magenta]/JOIN[/] [[bold magenta]canal[/bold magenta]]  ---- Unirse a un canal",
-        " * [bold magenta]/LIST[/] ---- Listar todos los canales",
-        " * [bold magenta]/MSG[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]mensaje[/bold magenta]] ---- Mandar mensaje a un canal",
-        " * [bold magenta]/WHISPER[/] [[bold magenta]nombreUsuario[/bold magenta]] [[bold magenta]mensaje[/bold magenta]] ---- Mandar un mensaje a un usuario",
-        " * [bold magenta]/QUIT[/] [[bold magenta]canal[/bold magenta]] ---- Abandonar un canal",
-        " * [bold magenta]/NAME[/] [[bold magenta]nuevoNombre[/bold magenta]] ---- Cambiar el nombre de usuario",
-        " * [bold magenta]/KICK[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]usuario[/bold magenta]] ---- Expulsar a un usuario del canal",
-        " * [bold magenta]/HELP[/] ---- Mostrar la lista de comandos disponibles",
-    ]
+            " * [bold magenta]/CREATE[/]  [[bold magenta]canal[/bold magenta]]  ---- Crear un canal",
+            " * [bold magenta]/JOIN[/] [[bold magenta]canal[/bold magenta]]  ---- Unirse a un canal",
+            " * [bold magenta]/LIST[/] ---- Listar todos los canales",
+            " * [bold magenta]/USERS[/]  ---- Mostrar todos los usuarios en el canal actual",
+            " * [bold magenta]/MSG[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]mensaje[/bold magenta]] ---- Mandar mensaje a un canal",
+            " * [bold magenta]/WHISPER[/] [[bold magenta]nombreUsuario[/bold magenta]] [[bold magenta]mensaje[/bold magenta]] ---- Mandar un mensaje a un usuario",
+            " * [bold magenta]/QUIT[/] [[bold magenta]canal[/bold magenta]] ---- Abandonar un canal",
+            " * [bold magenta]/NAME[/] [[bold magenta]nuevoNombre[/bold magenta]] ---- Cambiar el nombre de usuario",
+            " * [bold magenta]/KICK[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]usuario[/bold magenta]] ---- Expulsar a un usuario del canal",
+            " * [bold magenta]/HELP[/] ---- Mostrar la lista de comandos disponibles",
+            ]
     help_message = "Ulitice estos comandos para moverse por el chat:\n" + "\n".join(
         comandos
     )
