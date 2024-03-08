@@ -117,14 +117,18 @@ def join_channel(conn, input_client, username, addr):
         conn.sendall("Formato incorrecto. Usa /JOIN [nombreDelCanal]".encode('utf-8'))
         return
     channel_name = parts[1].strip()
+    # Verifica si el canal ya existe en el diccionario de canales
     if channel_name not in channels:
-        channels[channel_name] = {}
+        conn.sendall(f"El canal '{channel_name}' no existe.".encode('utf-8'))
+        return
+
     # Asegúrate de que el usuario está registrado antes de añadirlo a un canal.
     if username in users:
         channels[channel_name][username] = users[username]
         conn.sendall(f"Te has unido al canal '{channel_name}'.".encode('utf-8'))
     else:
         conn.sendall("Primero debes registrarte.".encode('utf-8'))
+
 
 
 
@@ -177,7 +181,7 @@ def change_username(conn, input_client, username, addr):
         conn.sendall("Ese nombre de usuario ya está en uso.".encode('utf-8'))
     else:
         with lock:
-           # Actualiza el diccionario de usuarios
+            # Actualiza el diccionario de usuarios
             if username in users:
                 del users[username]
             users[new_username] = addr[0]
