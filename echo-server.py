@@ -3,7 +3,7 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65437
+PORT = 65438
 TIEMPO_ESPERA = 100  # segundos
 
 # Diccionario para almacenar los canales y usuarios
@@ -172,7 +172,26 @@ def send_message(conn, input_client, username):
 
 
 def send_whisper(conn, input_client, username):
-    pass
+    global users
+    parts = input_client.split(" ", 2)
+    if len(parts) < 3:
+        conn.sendall("Formato incorrecto. Usa /WHISPER [nombreUsuario] [mensaje]".encode("utf-8"))
+        return
+
+    recipient_username = parts[1]
+    message_to_send = parts[2]
+
+    if recipient_username in users:
+        recipient_conn = users[recipient_username]["conn"]
+        try:
+            recipient_conn.sendall(
+                f"{username} te susurró: {message_to_send}".encode("utf-8")
+            )
+        except Exception as e:
+            print(f"Error al enviar mensaje a {recipient_username}: {e}")
+            conn.sendall(f"No se pudo enviar el mensaje a {recipient_username}.".encode("utf-8"))
+    else:
+        conn.sendall(f"El usuario {recipient_username} no está disponible o no está registrado.".encode("utf-8"))
 
 
 def broadcast_message(conn, input_client, username):

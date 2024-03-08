@@ -7,7 +7,7 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65437
+PORT = 65438
 
 console = Console()
 style = Style.from_dict(
