@@ -2,7 +2,7 @@ import subprocess
 
 
 def instalar_librerias():
-    librerias = ["rich", "prompt-toolkit"]
+    librerias = ["rich", "prompt-toolkit", "playsound"]
 
     for libreria in librerias:
         try:

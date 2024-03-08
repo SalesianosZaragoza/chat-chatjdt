@@ -2,12 +2,13 @@ from rich.console import Console
 from prompt_toolkit import PromptSession
 from prompt_toolkit.styles import Style
 from prompt_toolkit.patch_stdout import patch_stdout
+from playsound import playsound
 import socket
 import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65438
+PORT = 65439
 
 console = Console()
 style = Style.from_dict(
@@ -25,6 +26,9 @@ def receive_messages(sock):
                 break
             message = data.decode("utf-8").rstrip()
             console.print(message, style="green")
+            if "susurró" in message or "dice" in message:
+                # Reproduce el sonido cuando se recibe un mensaje
+                playsound("notificacion.mp3")
         except Exception as e:
             console.print(f"[red]Error al recibir mensajes: {e}[/red]")
             break
@@ -71,7 +75,7 @@ def main():
             " * [bold magenta]/NAME[/] [[bold magenta]nuevoNombre[/bold magenta]] ---- Cambiar el nombre de usuario",
             " * [bold magenta]/KICK[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]usuario[/bold magenta]] ---- Expulsar a un usuario del canal",
             " * [bold magenta]/HELP[/] ---- Mostrar la lista de comandos disponibles",
-            ]
+        ]
 
         for comando in comandos:
             console.print(comando)
