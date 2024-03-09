@@ -3,8 +3,8 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65439
-TIEMPO_ESPERA = 20  # segundos
+PORT = 65442
+TIEMPO_ESPERA = 60  # segundos
 
 # Diccionario para almacenar los canales y usuarios
 channels = {}
@@ -48,7 +48,7 @@ def handle_connection(conn, addr):
 
 
 def handle_command(conn, data, addr, username):
-    global channels
+    global channels, users
     input_client = data.decode()
     if input_client.startswith("/"):
         command = input_client.split()[0][1:]  # Extraer el comando sin el '/'
@@ -66,7 +66,10 @@ def handle_command(conn, data, addr, username):
         elif command == "QUIT":
             quit_channel(conn, input_client, username)
         elif command == "NAME":
-            change_username(conn, input_client, username, addr)
+            new_username = change_username(conn, input_client, username, addr)
+            if new_username:  # Asegura la actualización del nuevo nombre en username
+                username = new_username
+                print(f"username :  {username}")
         elif command == "KICK":
             kick_user(conn, input_client, username)
         elif command == "USERS":
@@ -169,6 +172,9 @@ def send_message(conn, input_client, username):
         return
     channel, message_to_send = parts[1], parts[2]
     if channel in channels:
+        if username not in channels[channel]:
+            conn.sendall("No eres miembro de este canal o has sido expulsado.".encode("utf-8"))
+            return
         for user, user_info in channels[channel].items():
             user_conn = user_info["conn"]
             try:
@@ -217,14 +223,15 @@ def broadcast_message(conn, input_client, username):
 def quit_channel(conn, input_client, username):
     global channels
     parts = input_client.split()
-    if len(parts) != 2:
-        conn.sendall("Formato incorrecto. Usa /QUIT nombre_del_canal".encode("utf-8"))
+    if len(parts) != 3:
+        conn.sendall("Formato incorrecto. Usa /QUIT [nombre_del_canal] [nombre_usuario]".encode("utf-8"))
         return
-    channel_name = parts[1]
-    if channel_name in channels and username in channels[channel_name]:
+    channel_name, user_to_quit = parts[1], parts[2]
+    if channel_name in channels and user_to_quit in channels[channel_name]:
+        print(f"Usuarios en el canal '{channel_name}':", channels[channel_name])
         with lock:
-            del channels[channel_name][username]  # Remueve al usuario del canal
-        conn.sendall(f"Has abandonado el canal {channel_name}.".encode("utf-8"))
+            del channels[channel_name][user_to_quit] 
+        conn.sendall(f"El usuario {user_to_quit} ha abandonado el canal {channel_name}.".encode("utf-8"))
     else:
         conn.sendall("No estás en ese canal o el canal no existe.".encode("utf-8"))
 
@@ -240,23 +247,28 @@ def change_username(conn, input_client, username, addr):
         conn.sendall("Ese nombre de usuario ya está en uso.".encode("utf-8"))
     else:
         with lock:
-            # Actualiza el diccionario de usuarios
-            if username in users:
-                del users[username]
-            users[new_username] = addr[0]
-
+            # Asegura mantener la información asociada con el usuario
+            user_info = users.get(username, {})
+            del users[username]
+            users[new_username] = user_info
             # Actualiza el nombre de usuario en todos los canales
-            for channel in channels.values():
-                if username in channel:
-                    channel[new_username] = channel.pop(username)
-
+            for channel, channel_users in channels.items():
+                if username in channel_users:
+                    channels[channel][new_username] = channels[channel].pop(username)
+    for channel, user_list in channels.items():
+        print(f"Canal: {channel}, Usuarios: {user_list}")
         conn.sendall(
             f"Tu nombre de usuario ha sido cambiado a {new_username}.".encode("utf-8")
         )
+    return new_username if new_username not in users else None
 
 
 def kick_user(conn, input_client, username):
     global channels
+    # Solo el usuario "Admin" puede utilizar este comando
+    if username.lower() != "admin":
+        conn.sendall("No tienes permisos para ejecutar este comando.".encode("utf-8"))
+        return
     parts = input_client.split()
     if len(parts) != 3:
         conn.sendall(
@@ -267,6 +279,12 @@ def kick_user(conn, input_client, username):
     if channel_name in channels and user_to_kick in channels[channel_name]:
         with lock:
             del channels[channel_name][user_to_kick]  # Expulsa al usuario del canal
+            try:
+                user_info = users[user_to_kick]
+                user_conn = user_info["conn"]
+                user_conn.sendall(f"Has sido expulsado del canal {channel_name}.".encode("utf-8"))
+            except Exception as e:
+                print(f"Error al notificar al usuario {user_to_kick} sobre la expulsión: {e}")
         conn.sendall(
             f"El usuario {user_to_kick} ha sido expulsado del canal {channel_name}.".encode()
         )
@@ -282,7 +300,7 @@ def help_command(conn):
         " * [bold magenta]/USERS[/]  ---- Mostrar todos los usuarios en el canal actual",
         " * [bold magenta]/MSG[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]mensaje[/bold magenta]] ---- Mandar mensaje a un canal",
         " * [bold magenta]/WHISPER[/] [[bold magenta]nombreUsuario[/bold magenta]] [[bold magenta]mensaje[/bold magenta]] ---- Mandar un mensaje a un usuario",
-        " * [bold magenta]/QUIT[/] [[bold magenta]canal[/bold magenta]] ---- Abandonar un canal",
+        " * [bold magenta]/QUIT[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]usuario[/bold magenta]] ---- Abandonar un canal",
         " * [bold magenta]/NAME[/] [[bold magenta]nuevoNombre[/bold magenta]] ---- Cambiar el nombre de usuario",
         " * [bold magenta]/KICK[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]usuario[/bold magenta]] ---- Expulsar a un usuario del canal",
         " * [bold magenta]/HELP[/] ---- Mostrar la lista de comandos disponibles",

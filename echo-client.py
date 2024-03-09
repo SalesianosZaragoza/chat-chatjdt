@@ -8,7 +8,7 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65439
+PORT = 65442
 
 console = Console()
 style = Style.from_dict(
@@ -30,7 +30,7 @@ def receive_messages(sock):
                 # Reproduce el sonido cuando se recibe un mensaje
                 playsound("notificacion.mp3")
         except Exception as e:
-            console.print(f"[red]Error al recibir mensajes: {e}[/red]")
+            console.print(f"Error al recibir mensajes: {e}", style="red")
             break
 
 
@@ -71,7 +71,7 @@ def main():
             " * [bold magenta]/USERS[/]  ---- Mostrar todos los usuarios en el canal actual",
             " * [bold magenta]/MSG[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]mensaje[/bold magenta]] ---- Mandar mensaje a un canal",
             " * [bold magenta]/WHISPER[/] [[bold magenta]nombreUsuario[/bold magenta]] [[bold magenta]mensaje[/bold magenta]] ---- Mandar un mensaje a un usuario",
-            " * [bold magenta]/QUIT[/] [[bold magenta]canal[/bold magenta]] ---- Abandonar un canal",
+            " * [bold magenta]/QUIT[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]usuario[/bold magenta]] ---- Abandonar un canal",
             " * [bold magenta]/NAME[/] [[bold magenta]nuevoNombre[/bold magenta]] ---- Cambiar el nombre de usuario",
             " * [bold magenta]/KICK[/] [[bold magenta]canal[/bold magenta]] [[bold magenta]usuario[/bold magenta]] ---- Expulsar a un usuario del canal",
             " * [bold magenta]/HELP[/] ---- Mostrar la lista de comandos disponibles",
