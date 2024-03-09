@@ -8,7 +8,7 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65437
+PORT = 65442
 
 console = Console()
 style = Style.from_dict(
@@ -30,7 +30,7 @@ def receive_messages(sock):
                 # Reproduce el sonido cuando se recibe un mensaje
                 playsound("notificacion.mp3")
         except Exception as e:
-            console.print(f"[red]Error al recibir mensajes: {e}[/red]")
+            console.print(f"Error al recibir mensajes: {e}", style="red")
             break
 
 

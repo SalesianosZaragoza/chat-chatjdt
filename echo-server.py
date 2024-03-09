@@ -3,7 +3,7 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65437
+PORT = 65442
 TIEMPO_ESPERA = 60  # segundos
 
 # Diccionario para almacenar los canales y usuarios
@@ -172,6 +172,9 @@ def send_message(conn, input_client, username):
         return
     channel, message_to_send = parts[1], parts[2]
     if channel in channels:
+        if username not in channels[channel]:
+            conn.sendall("No eres miembro de este canal o has sido expulsado.".encode("utf-8"))
+            return
         for user, user_info in channels[channel].items():
             user_conn = user_info["conn"]
             try:
@@ -262,7 +265,10 @@ def change_username(conn, input_client, username, addr):
 
 def kick_user(conn, input_client, username):
     global channels
-    
+    # Solo el usuario "Admin" puede utilizar este comando
+    if username.lower() != "admin":
+        conn.sendall("No tienes permisos para ejecutar este comando.".encode("utf-8"))
+        return
     parts = input_client.split()
     if len(parts) != 3:
         conn.sendall(
@@ -273,6 +279,12 @@ def kick_user(conn, input_client, username):
     if channel_name in channels and user_to_kick in channels[channel_name]:
         with lock:
             del channels[channel_name][user_to_kick]  # Expulsa al usuario del canal
+            try:
+                user_info = users[user_to_kick]
+                user_conn = user_info["conn"]
+                user_conn.sendall(f"Has sido expulsado del canal {channel_name}.".encode("utf-8"))
+            except Exception as e:
+                print(f"Error al notificar al usuario {user_to_kick} sobre la expulsión: {e}")
         conn.sendall(
             f"El usuario {user_to_kick} ha sido expulsado del canal {channel_name}.".encode()
         )
