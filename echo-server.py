@@ -69,7 +69,6 @@ def handle_command(conn, data, addr, username):
             new_username = change_username(conn, input_client, username, addr)
             if new_username:  # Asegura la actualización del nuevo nombre en username
                 username = new_username
-                print(f"username :  {username}")
         elif command == "KICK":
             kick_user(conn, input_client, username)
         elif command == "USERS":
@@ -228,7 +227,6 @@ def quit_channel(conn, input_client, username):
         return
     channel_name, user_to_quit = parts[1], parts[2]
     if channel_name in channels and user_to_quit in channels[channel_name]:
-        print(f"Usuarios en el canal '{channel_name}':", channels[channel_name])
         with lock:
             del channels[channel_name][user_to_quit] 
         conn.sendall(f"El usuario {user_to_quit} ha abandonado el canal {channel_name}.".encode("utf-8"))
@@ -285,9 +283,7 @@ def kick_user(conn, input_client, username):
                 user_conn.sendall(f"Has sido expulsado del canal {channel_name}.".encode("utf-8"))
             except Exception as e:
                 print(f"Error al notificar al usuario {user_to_kick} sobre la expulsión: {e}")
-        conn.sendall(
-            f"El usuario {user_to_kick} ha sido expulsado del canal {channel_name}.".encode()
-        )
+        conn.sendall( f"El usuario {user_to_kick} ha sido expulsado del canal {channel_name}.".encode())
     else:
         conn.sendall("El usuario no está en ese canal o el canal no existe.".encode())
 
