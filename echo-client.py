@@ -2,7 +2,6 @@ from rich.console import Console
 from prompt_toolkit import PromptSession
 from prompt_toolkit.styles import Style
 from prompt_toolkit.patch_stdout import patch_stdout
-from playsound import playsound
 import socket
 import threading
 import sys
