@@ -31,7 +31,7 @@ def handle_connection(conn, addr):
                     username = register_user(
                         data, addr, conn
                     )  # Siempre pasa el username actual
-                handle_command(conn, data, addr, username)
+                username = handle_command(conn, data, addr, username)
             except socket.timeout:
                 # Si el tiempo de espera se alcanza, cierra la conexión del cliente.
                 print(
@@ -79,6 +79,7 @@ def handle_command(conn, data, addr, username):
             conn.sendall("Comando no reconocido".encode())
     else:
         broadcast_message(conn, input_client, username)
+    return username
 
 
 def register_user(data, addr, conn):
@@ -165,11 +166,14 @@ def join_channel(conn, input_client, username, addr):
 
 def send_message(conn, input_client, username):
     global channels
+
     parts = input_client.split(" ", 2)
     if len(parts) < 3:
         conn.sendall("Formato incorrecto. Usa /MSG [canal] [mensaje]".encode("utf-8"))
         return
     channel, message_to_send = parts[1], parts[2]
+    print(f"Estado actual de channels: {channels}")
+    print(f"Verificando la membresía para el usuario '{username}' en el canal '{channel}'")
     if channel in channels:
         if username not in channels[channel]:
             conn.sendall(
@@ -258,21 +262,22 @@ def change_username(conn, input_client, username, addr):
         conn.sendall("Ese nombre de usuario ya está en uso.".encode("utf-8"))
     else:
         with lock:
-            # Asegura mantener la información asociada con el usuario
-            user_info = users.get(username, {})
-            del users[username]
+            # Actualiza el diccionario de usuarios con el nuevo nombre.
+            user_info = users.pop(username)
             users[new_username] = user_info
-            # Actualiza el nombre de usuario en todos los canales
+
+            # Actualiza el nombre del usuario en todos los canales.
             for channel, channel_users in channels.items():
                 if username in channel_users:
-                    channels[channel][new_username] = channels[channel].pop(username)
-    for channel, user_list in channels.items():
-        print(f"Canal: {channel}, Usuarios: {user_list}")
+                    userInfo = channel_users.pop(username)
+                    channel_users[new_username] = userInfo
+
+        for channel, user_list in channels.items():
+            print(f"Canal: {channel}, Usuarios: {user_list}")
         conn.sendall(
             f"Tu nombre de usuario ha sido cambiado a {new_username}.".encode("utf-8")
         )
-    return new_username if new_username not in users else None
-
+        return new_username
 
 def kick_user(conn, input_client, username):
     global channels

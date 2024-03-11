@@ -12,6 +12,7 @@ import pygame
 HOST = "127.0.0.1"
 PORT = 65443
 
+
 console = Console()
 style = Style.from_dict(
     {
