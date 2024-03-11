@@ -3,7 +3,7 @@ import threading
 import sys
 
 HOST = "127.0.0.1"
-PORT = 65442
+PORT = 65443
 TIEMPO_ESPERA = 60  # segundos
 
 # Diccionario para almacenar los canales y usuarios
@@ -172,13 +172,15 @@ def send_message(conn, input_client, username):
     channel, message_to_send = parts[1], parts[2]
     if channel in channels:
         if username not in channels[channel]:
-            conn.sendall("No eres miembro de este canal o has sido expulsado.".encode("utf-8"))
+            conn.sendall(
+                "No eres miembro de este canal o has sido expulsado.".encode("utf-8")
+            )
             return
         for user, user_info in channels[channel].items():
             user_conn = user_info["conn"]
             try:
                 user_conn.sendall(
-                    f"{username} (dijo en {channel}): {message_to_send}".encode("utf-8")
+                    f"{username} (dice en {channel}): {message_to_send}".encode("utf-8")
                 )
             except Exception as e:
                 print(f"Error al enviar mensaje a {user}: {e}")
@@ -223,15 +225,26 @@ def quit_channel(conn, input_client, username):
     global channels
     parts = input_client.split()
     if len(parts) != 3:
-        conn.sendall("Formato incorrecto. Usa /QUIT [nombre_del_canal] [nombre_usuario]".encode("utf-8"))
+        conn.sendall(
+            "Formato incorrecto. Usa /QUIT [nombre_del_canal] [nombre_usuario]".encode(
+                "utf-8"
+            )
+        )
         return
-    channel_name, user_to_quit = parts[1], parts[2]
-    if channel_name in channels and user_to_quit in channels[channel_name]:
-        with lock:
-            del channels[channel_name][user_to_quit] 
-        conn.sendall(f"El usuario {user_to_quit} ha abandonado el canal {channel_name}.".encode("utf-8"))
+    if username == parts[2]:
+        channel_name, user_to_quit = parts[1], parts[2]
+        if channel_name in channels and user_to_quit in channels[channel_name]:
+            with lock:
+                del channels[channel_name][user_to_quit]
+            conn.sendall(
+                f"El usuario {user_to_quit} ha abandonado el canal {channel_name}.".encode(
+                    "utf-8"
+                )
+            )
+        else:
+            conn.sendall("No estás en ese canal o el canal no existe.".encode("utf-8"))
     else:
-        conn.sendall("No estás en ese canal o el canal no existe.".encode("utf-8"))
+        conn.sendall("No puedes abandonar un canal en nombre de otro usuario.".encode())
 
 
 def change_username(conn, input_client, username, addr):
@@ -280,10 +293,16 @@ def kick_user(conn, input_client, username):
             try:
                 user_info = users[user_to_kick]
                 user_conn = user_info["conn"]
-                user_conn.sendall(f"Has sido expulsado del canal {channel_name}.".encode("utf-8"))
+                user_conn.sendall(
+                    f"Has sido expulsado del canal {channel_name}.".encode("utf-8")
+                )
             except Exception as e:
-                print(f"Error al notificar al usuario {user_to_kick} sobre la expulsión: {e}")
-        conn.sendall( f"El usuario {user_to_kick} ha sido expulsado del canal {channel_name}.".encode())
+                print(
+                    f"Error al notificar al usuario {user_to_kick} sobre la expulsión: {e}"
+                )
+        conn.sendall(
+            f"El usuario {user_to_kick} ha sido expulsado del canal {channel_name}.".encode()
+        )
     else:
         conn.sendall("El usuario no está en ese canal o el canal no existe.".encode())
 
