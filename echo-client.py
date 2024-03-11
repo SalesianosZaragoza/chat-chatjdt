@@ -6,6 +6,8 @@ from playsound import playsound
 import socket
 import threading
 import sys
+import pygame
+
 
 HOST = "127.0.0.1"
 PORT = 65443
@@ -28,7 +30,9 @@ def receive_messages(sock):
             console.print(message, style="green")
             if "susurró" in message or "dice" in message:
                 # Reproduce el sonido cuando se recibe un mensaje
-                playsound("notificacion.mp3")
+                pygame.mixer.init()
+                pygame.mixer.music.load("notificacion.mp3")
+                pygame.mixer.music.play()
         except Exception as e:
             console.print(f"Error al recibir mensajes: {e}", style="red")
             break
