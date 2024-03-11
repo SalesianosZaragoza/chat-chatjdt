@@ -28,10 +28,15 @@ def receive_messages(sock):
                 break
             message = data.decode("utf-8").rstrip()
             console.print(message, style="green")
-            if "susurró" in message or "dice" in message:
+            if "dice" in message:
                 # Reproduce el sonido cuando se recibe un mensaje
                 pygame.mixer.init()
                 pygame.mixer.music.load("notificacion.mp3")
+                pygame.mixer.music.play()
+            if "susurró" in message:
+                # Reproduce el sonido cuando se recibe un mensaje
+                pygame.mixer.init()
+                pygame.mixer.music.load("whisper.mp3")
                 pygame.mixer.music.play()
         except Exception as e:
             console.print(f"Error al recibir mensajes: {e}", style="red")
