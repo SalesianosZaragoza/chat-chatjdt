@@ -8,10 +8,8 @@ import threading
 import sys
 import pygame
 
-
 HOST = "127.0.0.1"
 PORT = 65443
-
 
 console = Console()
 style = Style.from_dict(
@@ -22,6 +20,12 @@ style = Style.from_dict(
 
 
 def receive_messages(sock):
+    """
+    Recibe y muestra los mensajes del servidor.
+
+    Args:
+        sock: Socket de comunicación con el servidor.
+    """
     while True:
         try:
             data = sock.recv(1024)
@@ -30,29 +34,32 @@ def receive_messages(sock):
             message = data.decode("utf-8").rstrip()
             console.print(message, style="green")
             if "dice" in message:
-                # Reproduce el sonido cuando se recibe un mensaje
                 pygame.mixer.init()
                 pygame.mixer.music.load("notificacion.mp3")
                 pygame.mixer.music.play()
             if "susurró" in message:
-                # Reproduce el sonido cuando se recibe un mensaje
                 pygame.mixer.init()
                 pygame.mixer.music.load("whisper.mp3")
                 pygame.mixer.music.play()
         except Exception as e:
-            console.print(f"Error al recibir mensajes: {e}", style="red")
+            console.print(f"[red]Error al conectar: {e}[/red]")
             break
 
 
 def send_messages(sock, session):
+    """
+    Envía mensajes al servidor.
+
+    Args:
+        sock: Socket de comunicación con el servidor.
+        session: Sesión de entrada de texto.
+    """
     try:
         while True:
             message = session.prompt("Comando: ", style=style)
             sock.sendall(message.encode("utf-8"))
     except KeyboardInterrupt:
-        console.print(
-            "\nCerrando CHAT-JDT ---  ¡ADIÓS!", style="cyan"
-        )  # mensaje para cuando cierras client con Ctnl+C en consola y terminas el While
+        console.print("\nCerrando CHAT-JDT ---  ¡ADIÓS!", style="cyan")
 
 
 def main():
@@ -89,7 +96,7 @@ def main():
 
         for comando in comandos:
             console.print(comando)
-            # Iniciar el hilo para recibir mensajes
+
         threading.Thread(target=receive_messages, args=(s,)).start()
         send_messages(s, session)
 
