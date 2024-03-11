@@ -8,12 +8,12 @@ CHAT-JDT es una aplicación de chat en tiempo real que permite a los usuarios cr
 
 Este proyecto ha sido posible gracias a los esfuerzos de:
 
-- ![IamIsmaelDev](https://avatars.githubusercontent.com/u/119622279?v=4) [IamIsmaelDev](https://github.com/IamIsmaelDev)
-- ![ismaelbernadtello](https://avatars.githubusercontent.com/u/87675183?v=4) [ismaelbernadtello](https://github.com/ismaelbernadtello)
-- ![alex55fc](https://avatars.githubusercontent.com/u/117534026?v=4) [alex55fc](https://github.com/alex55fc)
-- ![jesusmonteroking](https://avatars.githubusercontent.com/u/92047765?v=4) [jesusmonteroking](https://github.com/jesusmonteroking)
-- ![Trainsick](https://avatars.githubusercontent.com/u/119432771?v=4) [Trainsick](https://github.com/Trainsick)
-- ![GemmaRubioJ](https://avatars.githubusercontent.com/u/128501232?v=4) [GemmaRubioJ](https://github.com/GemmaRubioJ)
+- ![IamIsmaelDev](https://github.com/IamIsmaelDev.png?size=50) [IamIsmaelDev](https://github.com/IamIsmaelDev)
+- ![ismaelbernadtello](https://github.com/ismaelbernadtello.png?size=50) [ismaelbernadtello](https://github.com/ismaelbernadtello)
+- ![alex55fc](https://github.com/alex55fc.png?size=50) [alex55fc](https://github.com/alex55fc)
+- ![jesusmonteroking](https://github.com/jesusmonteroking.png?size=50) [jesusmonteroking](https://github.com/jesusmonteroking)
+- [Trainsick](https://github.com/Trainsick)
+- ![GemmaRubioJ](https://github.com/GemmaRubioJ.png?size=50) [GemmaRubioJ](https://github.com/GemmaRubioJ)
 
 ## Características
 
@@ -49,7 +49,7 @@ python3 echo-server.py
 Para conectar un cliente al chat:
 
 ```bash
-python echo-client.py
+python3 echo-client.py
 ``` 
 
 ## Comandos Disponibles
